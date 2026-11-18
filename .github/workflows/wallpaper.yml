@@ -3,8 +3,8 @@ name: wallpaper
 on:
   schedule:
     # cron 은 UTC 기준. 06:00 KST(낮) / 17:30 KST(밤). 단축어 자동화는 07:00 / 18:00 에 받아간다.
-    - cron: "0 21 * * *"
-    - cron: "30 8 * * *"
+    - cron: "0 19 * * *"
+    - cron: "00 7 * * *"
   workflow_dispatch:
     inputs:
       slot:
