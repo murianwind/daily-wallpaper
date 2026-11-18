@@ -29,6 +29,12 @@ Feature: 프롬프트 조립
     Then 프롬프트에 "monochrome" 가 들어 있다
     And 프롬프트에 "no color" 가 들어 있다
 
+  Scenario: 그림이 화면 가장자리까지 꽉 차도록 요구한다
+    Given 박연폭포 명승지
+    When day 시간대, autumn 계절, clear 날씨로 프롬프트를 만든다
+    Then 프롬프트에 "edge to edge" 가 들어 있다
+    And 프롬프트에 "no paper margin" 가 들어 있다
+
   Scenario: 명승지 묘사가 들어간다
     Given 박연폭포 명승지
     When day 시간대, autumn 계절, clear 날씨로 프롬프트를 만든다

@@ -1,8 +1,10 @@
-"""Turn the raw generated image into an iPhone-sized grayscale JPEG (cover-fit, centered crop)."""
+"""Turn the raw generated image into an iPhone-sized grayscale JPEG (trim, cover-fit, crop)."""
 
 import io
 
 from PIL import Image, UnidentifiedImageError
+
+from .config import EDGE_TRIM_RATIO
 
 JPEG_QUALITY = 92
 
@@ -17,6 +19,9 @@ def to_wallpaper(raw: bytes, width: int, height: int) -> bytes:
             image = source.convert("L")
     except (UnidentifiedImageError, OSError) as exc:
         raise ImageProcessingError("generated data is not a valid image") from exc
+
+    margin_x, margin_y = round(image.width * EDGE_TRIM_RATIO), round(image.height * EDGE_TRIM_RATIO)
+    image = image.crop((margin_x, margin_y, image.width - margin_x, image.height - margin_y))
 
     scale = max(width / image.width, height / image.height)
     resized = image.resize(

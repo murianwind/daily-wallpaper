@@ -31,6 +31,24 @@ def _brown():
     return png_bytes(300, 600, color=BROWN)
 
 
+@given("사방에 6% 두께의 흰 테두리가 있는 검은색 880x1920 PNG 이미지", target_fixture="raw")
+def _framed():
+    width, height = 880, 1920
+    image = Image.new("L", (width, height), 255)
+    image.paste(
+        0,
+        (
+            round(width * 0.06),
+            round(height * 0.06),
+            width - round(width * 0.06),
+            height - round(height * 0.06),
+        ),
+    )
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
 @given("투명 배경 RGBA PNG 이미지", target_fixture="raw")
 def _transparent():
     return png_bytes(300, 600, color=(10, 20, 30, 0), mode="RGBA")
@@ -78,6 +96,13 @@ def _center_is_green_level(ctx):
 @then("결과의 가운데 픽셀은 갈색의 밝기이다")
 def _center_is_brown_level(ctx):
     _assert_gray_level(_pixel(ctx, 0.5, 0.5), _luma(*BROWN))
+
+
+@then("결과의 가장자리 표본 픽셀에는 테두리의 흰색이 없다")
+def _edges_have_no_frame(ctx):
+    for x_ratio in (0.0, 0.5, 0.999):
+        for y_ratio in (0.0, 0.5, 0.999):
+            assert _pixel(ctx, x_ratio, y_ratio)[0] < 60
 
 
 @then("결과의 모든 표본 픽셀은 회색이다")

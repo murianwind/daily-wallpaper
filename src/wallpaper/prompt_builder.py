@@ -10,6 +10,7 @@ STYLE = (
     "bold dry-brush strokes, dense vertical texture strokes on granite cliffs, "
     "layered ink wash, aged hanji paper texture in neutral grey, vertical "
     "hanging-scroll composition, calm empty sky in the upper third, "
+    "painting fills the whole canvas edge to edge, no frame, no paper margin, "
     "no text, no seals, no signature, no border."
 )
 
