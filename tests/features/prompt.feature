@@ -23,6 +23,12 @@ Feature: 프롬프트 조립
     And 프롬프트에 "Jeong Seon" 가 들어 있다
     And 프롬프트에 "no text" 가 들어 있다
 
+  Scenario: 흑백 수묵을 요구한다
+    Given 박연폭포 명승지
+    When day 시간대, autumn 계절, clear 날씨로 프롬프트를 만든다
+    Then 프롬프트에 "monochrome" 가 들어 있다
+    And 프롬프트에 "no color" 가 들어 있다
+
   Scenario: 명승지 묘사가 들어간다
     Given 박연폭포 명승지
     When day 시간대, autumn 계절, clear 날씨로 프롬프트를 만든다
@@ -32,12 +38,12 @@ Feature: 프롬프트 조립
     Given 박연폭포 명승지
     When day 시간대, autumn 계절, clear 날씨로 프롬프트를 만든다
     Then 프롬프트에 "bright daytime" 가 들어 있다
-    And 프롬프트에 "deep indigo" 가 들어 있지 않다
+    And 프롬프트에 "deep black ink" 가 들어 있지 않다
 
   Scenario: 밤 프롬프트는 어두운 톤을 요구한다
     Given 박연폭포 명승지
     When night 시간대, autumn 계절, clear 날씨로 프롬프트를 만든다
-    Then 프롬프트에 "deep indigo" 가 들어 있다
+    Then 프롬프트에 "deep black ink" 가 들어 있다
     And 프롬프트에 "bright daytime" 가 들어 있지 않다
 
   Scenario: 계절이 프롬프트에 반영된다
@@ -62,6 +68,10 @@ Feature: 프롬프트 조립
   Scenario: 어떤 조합도 프롬프트 길이 제한을 넘지 않는다
     Given 실제 명승지 데이터 파일
     Then 모든 명승지와 조합의 프롬프트가 2000자 이하이다
+
+  Scenario: 어떤 조합에도 색 이름이 들어가지 않는다
+    Given 실제 명승지 데이터 파일
+    Then 모든 명승지와 조합의 프롬프트에 색 이름이 없다
 
   Scenario: 알 수 없는 시간대는 거부된다
     Given 박연폭포 명승지

@@ -6,24 +6,23 @@ from .spot_selector import Spot
 
 STYLE = (
     "Korean Joseon-era true-view landscape ink painting (jingyeong sansuhwa) in the manner of "
-    "Jeong Seon, bold dry-brush strokes, dense vertical texture strokes on granite cliffs, "
-    "layered ink wash with restrained pale colors, aged hanji paper texture, vertical "
+    "Jeong Seon, strictly monochrome black ink wash in shades of grey, no color, "
+    "bold dry-brush strokes, dense vertical texture strokes on granite cliffs, "
+    "layered ink wash, aged hanji paper texture in neutral grey, vertical "
     "hanging-scroll composition, calm empty sky in the upper third, "
     "no text, no seals, no signature, no border."
 )
 
 _SEASON_PHRASES = {
-    "spring": "spring, fresh pale green leaves and a few blossoming mountain cherry trees",
-    "summer": "summer, lush deep green foliage",
-    "autumn": "autumn, foliage in muted ochre and russet",
+    "spring": "spring, soft pale washes for new leaves and a few blossoming cherry trees",
+    "summer": "summer, lush dense foliage in dark ink washes",
+    "autumn": "autumn, thinning foliage in soft mid-grey washes",
     "winter": "winter, bare branches and snow dusting the rocks",
 }
 
 _TIME_PHRASES = {
-    "day": "bright daytime, luminous pale washes, light paper tone, high-key",
-    "night": (
-        "night scene, deep indigo and black ink wash, dark low-key tones, a faint pale moon glow"
-    ),
+    "day": "bright daytime, luminous pale grey washes, light paper tone, high-key",
+    "night": ("night scene, deep black ink wash, dark low-key tones, a faint pale moon glow"),
 }
 
 # Keyed by weather condition (every value weather.classify can return), then by slot.

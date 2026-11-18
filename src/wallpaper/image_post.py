@@ -1,4 +1,4 @@
-"""Turn the raw generated image into an iPhone-sized JPEG (cover-fit, centered crop)."""
+"""Turn the raw generated image into an iPhone-sized grayscale JPEG (cover-fit, centered crop)."""
 
 import io
 
@@ -14,7 +14,7 @@ class ImageProcessingError(RuntimeError):
 def to_wallpaper(raw: bytes, width: int, height: int) -> bytes:
     try:
         with Image.open(io.BytesIO(raw)) as source:
-            image = source.convert("RGB")
+            image = source.convert("L")
     except (UnidentifiedImageError, OSError) as exc:
         raise ImageProcessingError("generated data is not a valid image") from exc
 
@@ -27,6 +27,7 @@ def to_wallpaper(raw: bytes, width: int, height: int) -> bytes:
     top = (resized.height - height) // 2
     cropped = resized.crop((left, top, left + width, top + height))
 
+    # Saved as 3-channel JPEG (neutral chroma costs almost nothing) for maximum iOS compatibility.
     output = io.BytesIO()
-    cropped.save(output, format="JPEG", quality=JPEG_QUALITY, optimize=True)
+    cropped.convert("RGB").save(output, format="JPEG", quality=JPEG_QUALITY, optimize=True)
     return output.getvalue()

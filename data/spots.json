@@ -39,7 +39,7 @@
     "id": "guryongyeon",
     "name_ko": "구룡연",
     "area": "외금강",
-    "visual": "a very tall waterfall pouring down a sheer smooth granite wall into a deep green pool, surrounded by steep forested cliffs"
+    "visual": "a very tall waterfall pouring down a sheer smooth granite wall into a deep dark pool, surrounded by steep forested cliffs"
   },
   {
     "id": "myeonggyeongdae",
@@ -165,7 +165,7 @@
     "id": "gudambong",
     "name_ko": "구담봉",
     "area": "단양",
-    "visual": "a steep layered rock cliff rising straight from a green river, crags with pines, small boats below"
+    "visual": "a steep layered rock cliff rising straight from a dark river, crags with pines, small boats below"
   },
   {
     "id": "saineam",
@@ -237,6 +237,6 @@
     "id": "seongsan-ilchulbong",
     "name_ko": "성산일출봉",
     "area": "제주",
-    "visual": "a huge crater-topped rock rising from the sea beside a narrow neck of land, steep green-capped sides, waves around it"
+    "visual": "a huge crater-topped rock rising from the sea beside a narrow neck of land, steep forest-capped sides, waves around it"
   }
 ]

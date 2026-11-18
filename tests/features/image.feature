@@ -10,7 +10,13 @@ Feature: 배경화면 이미지 후처리
     Given 가로 3등분(빨강, 초록, 파랑)된 1200x400 PNG 이미지
     When 1179x2556 크기로 변환한다
     Then 결과는 1179x2556 JPEG 이다
-    And 결과의 가운데 픽셀은 초록색 계열이다
+    And 결과의 가운데 픽셀은 초록색의 밝기이다
+
+  Scenario: 컬러 이미지는 회색조로 바뀌고 밝기는 유지된다
+    Given 갈색 단색 PNG 이미지
+    When 1179x2556 크기로 변환한다
+    Then 결과의 모든 표본 픽셀은 회색이다
+    And 결과의 가운데 픽셀은 갈색의 밝기이다
 
   Scenario: 투명 배경 PNG 도 JPEG 로 바뀐다
     Given 투명 배경 RGBA PNG 이미지
