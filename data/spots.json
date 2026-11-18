@@ -1,0 +1,242 @@
+[
+  {
+    "id": "bakyeon-falls",
+    "name_ko": "박연폭포",
+    "area": "개성",
+    "visual": "a tall narrow waterfall plunging from a sheer granite cliff into a deep round pool, gnarled pines clinging to the rocks, steep rock walls on both sides"
+  },
+  {
+    "id": "chongseokjeong",
+    "name_ko": "총석정",
+    "area": "통천",
+    "visual": "tall hexagonal stone pillars rising straight out of the sea along the east coast, a small pavilion on the rocky headland, waves breaking at their base"
+  },
+  {
+    "id": "haegeumgang",
+    "name_ko": "해금강",
+    "area": "고성",
+    "visual": "rocky islets and sea stacks rising from the open sea off the east coast, twisted pines on their tops, white waves, a wide empty horizon"
+  },
+  {
+    "id": "manpokdong",
+    "name_ko": "만폭동",
+    "area": "내금강",
+    "visual": "a rocky valley of broad granite slabs with many cascades and clear pools, steep peaks above, pines and drifting mist"
+  },
+  {
+    "id": "birobong",
+    "name_ko": "비로봉",
+    "area": "금강산",
+    "visual": "the highest summit of the Diamond Mountains, a steep bare granite peak with jagged ridges, clouds filling the valleys below, lone pines on the slopes"
+  },
+  {
+    "id": "sambuyeon",
+    "name_ko": "삼부연",
+    "area": "철원",
+    "visual": "a three-tiered waterfall tumbling down stepped rock ledges into successive pools, inside a narrow forested gorge"
+  },
+  {
+    "id": "guryongyeon",
+    "name_ko": "구룡연",
+    "area": "외금강",
+    "visual": "a very tall waterfall pouring down a sheer smooth granite wall into a deep green pool, surrounded by steep forested cliffs"
+  },
+  {
+    "id": "myeonggyeongdae",
+    "name_ko": "명경대",
+    "area": "내금강",
+    "visual": "a tall mirror-smooth rock cliff face rising above a gorge stream, pines along its top, stepped boulders below"
+  },
+  {
+    "id": "samilpo",
+    "name_ko": "삼일포",
+    "area": "고성",
+    "visual": "a calm lake ringed by low hills and pines, a small pavilion on a tiny island, still water reflecting the hills"
+  },
+  {
+    "id": "jangansa",
+    "name_ko": "장안사",
+    "area": "내금강",
+    "visual": "a Buddhist temple complex with tiled roofs and a stone bridge at the foot of steep granite peaks, a stream running past"
+  },
+  {
+    "id": "jeongyangsa",
+    "name_ko": "정양사",
+    "area": "내금강",
+    "visual": "a hilltop temple pavilion on a ridge looking out over countless jagged granite peaks fading into mist"
+  },
+  {
+    "id": "danbalryeong",
+    "name_ko": "단발령",
+    "area": "금강산",
+    "visual": "a mountain pass with a few travellers, seen across misty layered ridges toward distant jagged white peaks"
+  },
+  {
+    "id": "okryudong",
+    "name_ko": "옥류동",
+    "area": "외금강",
+    "visual": "a clear stream sliding over smooth granite slabs into small pools and short waterfalls between sheer cliffs"
+  },
+  {
+    "id": "manmulsang",
+    "name_ko": "만물상",
+    "area": "외금강",
+    "visual": "a fantastic crowd of strangely shaped granite pinnacles and pillars rising in ridges, like countless standing figures"
+  },
+  {
+    "id": "sangpaldam",
+    "name_ko": "상팔담",
+    "area": "외금강",
+    "visual": "a chain of eight small emerald pools stepping down among steep granite cliffs and pines"
+  },
+  {
+    "id": "sibi-falls",
+    "name_ko": "십이폭포",
+    "area": "외금강",
+    "visual": "a long series of cascades tumbling down a steep rock face in many tiers, spray and mist rising"
+  },
+  {
+    "id": "bodeogam",
+    "name_ko": "보덕암",
+    "area": "내금강",
+    "visual": "a tiny hermitage clinging to a sheer cliff, held up by a single slender pillar, above a deep gorge"
+  },
+  {
+    "id": "sijungdae",
+    "name_ko": "시중대",
+    "area": "통천",
+    "visual": "a small pavilion on a pine-covered sea bluff, overlooking the sea and a line of rocky islets"
+  },
+  {
+    "id": "munam",
+    "name_ko": "문암",
+    "area": "고성",
+    "visual": "gate-shaped rocks standing in the sea with waves around them, open sea and a pale horizon beyond"
+  },
+  {
+    "id": "cheonggan-jeong",
+    "name_ko": "청간정",
+    "area": "고성",
+    "visual": "a pavilion on a rocky shore among old pines, looking out to the east sea, waves on the rocks"
+  },
+  {
+    "id": "naksansa",
+    "name_ko": "낙산사",
+    "area": "양양",
+    "visual": "a small seaside pavilion perched on a sea cliff beside pines, temple roofs behind, waves below"
+  },
+  {
+    "id": "gyeongpodae",
+    "name_ko": "경포대",
+    "area": "강릉",
+    "visual": "an open pavilion on a hill above a wide calm lake, with a pine-covered sand bar and the sea beyond"
+  },
+  {
+    "id": "jukseoru",
+    "name_ko": "죽서루",
+    "area": "삼척",
+    "visual": "a large wooden pavilion on a rocky cliff above a river, a pine on the crag, steep rock below"
+  },
+  {
+    "id": "mangyangjeong",
+    "name_ko": "망양정",
+    "area": "울진",
+    "visual": "a pavilion on a high headland looking over the vast open sea, old pines, distant sails"
+  },
+  {
+    "id": "wolsongjeong",
+    "name_ko": "월송정",
+    "area": "울진",
+    "visual": "a pavilion standing in a grove of old pines on a sandy coast beside the sea"
+  },
+  {
+    "id": "dodamsambong",
+    "name_ko": "도담삼봉",
+    "area": "단양",
+    "visual": "three rocky peaks standing in the middle of a broad river, a tiny pavilion on the central peak, pines on the tops"
+  },
+  {
+    "id": "oksunbong",
+    "name_ko": "옥순봉",
+    "area": "단양",
+    "visual": "a tall slender rock peak shooting up like a bamboo shoot beside a river, pines on its top, steep cliffs"
+  },
+  {
+    "id": "gudambong",
+    "name_ko": "구담봉",
+    "area": "단양",
+    "visual": "a steep layered rock cliff rising straight from a green river, crags with pines, small boats below"
+  },
+  {
+    "id": "saineam",
+    "name_ko": "사인암",
+    "area": "단양",
+    "visual": "a sheer vertical stone wall in neat layers rising from a clear stream, pines on its crown"
+  },
+  {
+    "id": "samyongchu",
+    "name_ko": "삼용추",
+    "area": "포항 내연산",
+    "visual": "a series of waterfalls dropping into deep pools within a narrow rocky gorge, pines on the cliffs"
+  },
+  {
+    "id": "apgujeong",
+    "name_ko": "압구정",
+    "area": "서울 한강변",
+    "visual": "a pavilion on a bluff above a wide river with sandbars, willows and small boats drifting by"
+  },
+  {
+    "id": "inwangsan",
+    "name_ko": "인왕산",
+    "area": "서울",
+    "visual": "a massive bare granite mountain with a rounded rocky summit above a quiet village of tiled roofs and old pines"
+  },
+  {
+    "id": "bukhansan",
+    "name_ko": "북한산",
+    "area": "서울",
+    "visual": "twin granite peaks soaring above forested ridges, bare rock faces, mist lying in the valleys"
+  },
+  {
+    "id": "biseondae",
+    "name_ko": "비선대",
+    "area": "설악산",
+    "visual": "huge granite cliffs towering over a rocky stream with broad flat boulders and clear pools, pines on the ledges"
+  },
+  {
+    "id": "ulsanbawi",
+    "name_ko": "울산바위",
+    "area": "설악산",
+    "visual": "an enormous jagged granite ridge standing like a wall of stone peaks above a pine forest"
+  },
+  {
+    "id": "maisan",
+    "name_ko": "마이산",
+    "area": "진안",
+    "visual": "two rounded rocky peaks side by side like horse ears, bare rock sides, pines at their feet"
+  },
+  {
+    "id": "buyongdae",
+    "name_ko": "부용대",
+    "area": "안동",
+    "visual": "a river curving around a quiet village below a high cliff, pines on the cliff top, pale sand banks"
+  },
+  {
+    "id": "wolchulsan",
+    "name_ko": "월출산",
+    "area": "영암",
+    "visual": "rugged granite crags rising abruptly from a flat plain, a narrow trail winding up between pines"
+  },
+  {
+    "id": "jeongbang-falls",
+    "name_ko": "정방폭포",
+    "area": "제주",
+    "visual": "a waterfall dropping from a sea cliff straight into the sea, with dark rocks and a few pines"
+  },
+  {
+    "id": "seongsan-ilchulbong",
+    "name_ko": "성산일출봉",
+    "area": "제주",
+    "visual": "a huge crater-topped rock rising from the sea beside a narrow neck of land, steep green-capped sides, waves around it"
+  }
+]
