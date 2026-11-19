@@ -2,11 +2,12 @@ name: wallpaper
 
 on:
   schedule:
-    # timezone 을 지정해 한국 시각 기준으로 돈다. 04:00(낮 그림) / 16:00(밤 그림).
+    # timezone 을 지정해 한국 시각 기준으로 돈다. 04:07(낮 그림) / 16:07(밤 그림).
+    # 정각은 Actions 부하가 몰려 예약 실행이 늦어지거나 누락될 수 있어 7분을 비켰다.
     # 단축어 자동화는 07:00 / 18:00 에 받아간다.
-    - cron: "0 4 * * *"
+    - cron: "7 4 * * *"
       timezone: "Asia/Seoul"
-    - cron: "0 16 * * *"
+    - cron: "7 16 * * *"
       timezone: "Asia/Seoul"
   workflow_dispatch:
     inputs:
