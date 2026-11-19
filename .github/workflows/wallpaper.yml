@@ -2,9 +2,12 @@ name: wallpaper
 
 on:
   schedule:
-    # cron 은 UTC 기준. 06:00 KST(낮) / 17:30 KST(밤). 단축어 자동화는 07:00 / 18:00 에 받아간다.
-    - cron: "0 19 * * *"
-    - cron: "00 7 * * *"
+    # timezone 을 지정해 한국 시각 기준으로 돈다. 04:00(낮 그림) / 16:00(밤 그림).
+    # 단축어 자동화는 07:00 / 18:00 에 받아간다.
+    - cron: "0 4 * * *"
+      timezone: "Asia/Seoul"
+    - cron: "0 16 * * *"
+      timezone: "Asia/Seoul"
   workflow_dispatch:
     inputs:
       slot:
@@ -35,8 +38,8 @@ jobs:
       - name: Generate wallpaper
         env:
           PYTHONPATH: src
-          # 예약 실행은 크론 식으로 시간대를 정하고(지연되어도 안전), 수동 실행은 입력값을 쓴다.
-          SLOT: ${{ inputs.slot || (github.event.schedule == '30 8 * * *' && 'night' || 'day') }}
+          # 예약 실행은 auto: 한국 시각 12시 이전이면 낮, 이후면 밤(크론 식에 의존하지 않는다).
+          SLOT: ${{ inputs.slot || 'auto' }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}

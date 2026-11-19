@@ -5,7 +5,7 @@
 이미지는 아이폰에 저장되지 않고 매번 내려받아 바로 적용됩니다.
 
 ```
-GitHub Actions (06:00 / 17:30 KST)
+GitHub Actions (04:00 / 16:00 KST)
   명승지 선택 → 서울 날씨(Open-Meteo) → 프롬프트 조립
   → Cloudflare Workers AI 로 생성 (실패 시 최대 3회) → 1179x2556 JPEG → GitHub Pages(latest.jpg)
 아이폰 단축어 자동화 (07:00 / 18:00) → latest.jpg 다운로드 → 배경화면 설정
@@ -51,8 +51,8 @@ GitHub Actions (06:00 / 17:30 KST)
 - 공개 저장소는 **60일 동안 활동이 없으면 예약 실행이 자동으로 꺼집니다.** 워크플로의 `keepalive` 작업이
   이를 막아 보려고 매일 워크플로를 다시 enable 하지만, 실제로 막아지는지는 두 달 뒤에야 확인됩니다.
   예약 실행이 멈추면 Actions 탭에서 워크플로를 다시 Enable 하세요.
-- GitHub 예약 실행은 몇 분에서 수십 분 늦을 수 있어 생성(06:00, 17:30)과 단축어(07:00, 18:00) 사이에 여유를 뒀습니다.
-- 새벽 크론이 한참 늦어져도 낮/밤은 크론 식으로 정해지므로 뒤바뀌지 않습니다.
+- GitHub 예약 실행은 몇 분에서 수십 분 늦을 수 있어 생성(04:00, 16:00)과 단축어(07:00, 18:00) 사이에 여유를 뒀습니다.
+- 크론은 `timezone: "Asia/Seoul"` 로 한국 시각 기준입니다. 낮/밤은 실행 시각(한국 12시 이전이면 낮)으로 정해지므로, 예약 실행이 몇 시간 늦어져도 뒤바뀌지 않습니다.
 
 ## 바꾸는 방법
 
@@ -61,7 +61,7 @@ GitHub Actions (06:00 / 17:30 KST)
 | 명승지 추가/삭제/묘사 수정 | `data/spots.json` (`id`는 중복 불가, `visual`은 영어 시각 묘사) |
 | 화풍, 계절·날씨·시간대 문구 | `src/wallpaper/prompt_builder.py` |
 | 날씨 기준 지점(서울), 해상도, 모델, 재시도 횟수 | `src/wallpaper/config.py` |
-| 생성 시각 | `.github/workflows/wallpaper.yml` 의 cron (UTC 기준) |
+| 생성 시각 | `.github/workflows/wallpaper.yml` 의 cron (`timezone: "Asia/Seoul"` 한국 시각 기준) |
 
 FLUX 계열 모델은 "박연폭포" 같은 이름을 정확히 모를 수 있어서, 이름 대신 `visual` 의 영어 묘사로 장면을 그립니다.
 결과는 실제 지형의 재현이 아니라 그 분위기의 산수화입니다. 묘사가 마음에 들지 않으면 `spots.json` 의 `visual` 만 고치면 됩니다.

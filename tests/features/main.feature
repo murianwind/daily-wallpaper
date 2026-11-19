@@ -8,9 +8,11 @@ Feature: 배경화면 생성 실행
 
     Examples:
       | requested | hour | minute | expected |
+      | auto      | 4    | 0      | day      |
       | auto      | 6    | 0      | day      |
       | auto      | 11   | 59     | day      |
       | auto      | 12   | 0      | night    |
+      | auto      | 16   | 0      | night    |
       | auto      | 17   | 30     | night    |
       | night     | 6    | 0      | night    |
       | day       | 18   | 0      | day      |
