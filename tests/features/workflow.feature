@@ -10,3 +10,7 @@ Feature: 워크플로 예약 실행
   Scenario: 낮/밤은 크론 식이 아니라 실행 시각으로 정한다
     Given 워크플로 파일
     Then 예약 실행의 시간대 입력값은 "auto" 이다
+
+  Scenario: 생성 단계는 배포된 latest.json 주소를 받아 직전 명승지를 읽는다
+    Given 워크플로 파일
+    Then 생성 단계의 LATEST_JSON_URL 은 이 저장소의 Pages 주소 latest.json 이다

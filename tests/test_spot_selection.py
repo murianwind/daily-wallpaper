@@ -1,5 +1,5 @@
 import json
-from datetime import date, timedelta
+import random
 
 from pytest_bdd import given, parsers, scenarios, then, when
 
@@ -8,6 +8,8 @@ from wallpaper import spot_selector
 from wallpaper.spot_selector import Spot, SpotDataError
 
 scenarios("features/spot_selection.feature")
+
+WINDOW = 20  # 40 spots in data/spots.json -> half of them are remembered
 
 
 def _spot(index):
@@ -25,6 +27,11 @@ def _single_spot():
     return [_spot(1)]
 
 
+@given("명승지가 2곳뿐인 목록", target_fixture="spots")
+def _two_spots():
+    return [_spot(1), _spot(2)]
+
+
 @given("visual 항목이 빠진 명승지 파일", target_fixture="bad_file")
 def _missing_visual(tmp_path):
     return _write(tmp_path, [{"id": "a", "name_ko": "가", "area": "x"}])
@@ -36,55 +43,43 @@ def _duplicate_id(tmp_path):
     return _write(tmp_path, [item, dict(item)])
 
 
-@when(
-    parsers.parse("{start}부터 {days:d}일 동안 매일 낮과 밤의 명승지를 고른다"),
-    target_fixture="picks",
-)
-def _pick_range(spots, start, days):
-    first = date.fromisoformat(start)
-    return _pick_days(spots, [first + timedelta(days=i) for i in range(days)])
+@given("최근 기록이 비어 있다", target_fixture="recent")
+def _no_recent():
+    return []
 
 
-@when(
-    parsers.parse("{start} 이후 처음 시작되는 한 주기 동안 매일 낮과 밤의 명승지를 고른다"),
-    target_fixture="picks",
-)
-def _pick_one_cycle(spots, start):
-    length = spot_selector.cycle_length(spots)
-    first = date.fromisoformat(start)
-    while first.toordinal() % length:
-        first += timedelta(days=1)
-    return _pick_days(spots, [first + timedelta(days=i) for i in range(length)])
+@given(parsers.parse("최근 기록이 목록의 앞쪽 {count:d}곳이다"), target_fixture="recent")
+def _first_n_recent(spots, count):
+    return [spot.id for spot in spots[:count]]
 
 
-def _pick_days(spots, days):
-    return [
-        (
-            day,
-            spot_selector.select_spot(spots, day, "day"),
-            spot_selector.select_spot(spots, day, "night"),
-        )
-        for day in days
-    ]
+@given(parsers.parse('최근 기록이 "{spot_id}" 하나뿐이다'), target_fixture="recent")
+def _unknown_recent(spot_id):
+    return [spot_id]
 
 
-@when(parsers.parse("{day} 낮의 명승지를 두 번 고른다"), target_fixture="twice")
-def _pick_twice(spots, day):
-    target = date.fromisoformat(day)
+@given("최근 기록이 첫 번째 명승지 하나뿐이다", target_fixture="recent")
+def _first_recent(spots):
+    return [spots[0].id]
+
+
+@when(parsers.parse("같은 난수 발생기로 {times:d}번 연달아 고른다"), target_fixture="picks")
+def _pick_many(spots, recent, times):
+    rng = random.Random(0)
+    return [spot_selector.choose_spot(spots, recent, rng) for _ in range(times)]
+
+
+@when(parsers.parse("난수 시드 {seed:d} 로 두 번 고른다"), target_fixture="twice")
+def _pick_twice(spots, recent, seed):
     return (
-        spot_selector.select_spot(spots, target, "day"),
-        spot_selector.select_spot(spots, target, "day"),
+        spot_selector.choose_spot(spots, recent, random.Random(seed)),
+        spot_selector.choose_spot(spots, recent, random.Random(seed)),
     )
 
 
-@when(parsers.parse("{day} 낮의 명승지를 고르려 한다"))
-def _try_pick_day(spots, ctx, day):
-    _, ctx["error"] = capture(spot_selector.select_spot, spots, date.fromisoformat(day), "day")
-
-
-@when(parsers.parse("{day} 새벽의 명승지를 고르려 한다"))
-def _try_pick_dawn(spots, ctx, day):
-    _, ctx["error"] = capture(spot_selector.select_spot, spots, date.fromisoformat(day), "dawn")
+@when("명승지를 한 번 고르려 한다")
+def _try_pick(spots, recent, ctx):
+    _, ctx["error"] = capture(spot_selector.choose_spot, spots, recent, random.Random(0))
 
 
 @when("그 파일을 불러오려 한다")
@@ -97,15 +92,26 @@ def _at_least_two(spots):
     assert len(spots) >= 2
 
 
-@then("어느 날도 낮과 밤의 명승지가 같지 않다")
-def _day_night_differ(picks):
-    assert all(day_spot.id != night_spot.id for _, day_spot, night_spot in picks)
+@then("최근 기록에 있는 명승지는 한 번도 나오지 않는다")
+def _recent_never_picked(picks, recent):
+    assert not {spot.id for spot in picks} & set(recent)
 
 
-@then("고른 명승지가 모두 서로 다르다")
-def _all_distinct(picks):
-    ids = [spot.id for _, day_spot, night_spot in picks for spot in (day_spot, night_spot)]
-    assert len(ids) == len(set(ids))
+@then("모든 명승지가 한 번 이상 나온다")
+def _all_picked(picks, spots):
+    assert {spot.id for spot in picks} == {spot.id for spot in spots}
+
+
+@then("기록의 앞쪽 20곳은 나오지 않고 21번째부터는 나온다")
+def _only_window_avoided(picks, recent):
+    picked = {spot.id for spot in picks}
+    assert not picked & set(recent[:WINDOW])
+    assert picked & set(recent[WINDOW:])
+
+
+@then("100번 모두 명승지가 골라진다")
+def _all_hundred(picks):
+    assert len(picks) == 100
 
 
 @then("두 결과가 같다")
@@ -116,12 +122,6 @@ def _same(twice):
 @then("명승지 부족 오류가 발생한다")
 def _not_enough(ctx):
     assert isinstance(ctx["error"], SpotDataError)
-
-
-@then("시간대 오류가 발생한다")
-def _slot_error(ctx):
-    assert isinstance(ctx["error"], ValueError)
-    assert "slot" in str(ctx["error"])
 
 
 @then(parsers.parse('데이터 오류가 발생하고 메시지에 "{word}"이 들어 있다'))

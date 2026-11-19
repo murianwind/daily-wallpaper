@@ -1,14 +1,12 @@
-"""Choose the scenic spot for a given date and slot, without keeping any state."""
+"""Load the scenic spots and pick one at random, avoiding the ones used recently."""
 
-import hashlib
 import json
+import random
 from dataclasses import dataclass
-from datetime import date
 from pathlib import Path
 
-from .config import SLOTS
-
 _REQUIRED_FIELDS = ("id", "name_ko", "area", "visual")
+_MIN_SPOTS = 2  # one spot to avoid (the latest) and at least one to choose
 
 
 class SpotDataError(ValueError):
@@ -38,22 +36,14 @@ def load_spots(path: Path) -> list[Spot]:
     return spots
 
 
-def cycle_length(spots: list[Spot]) -> int:
-    """Days it takes to show every spot once (each day consumes one spot per slot)."""
-    length = len(spots) // len(SLOTS)
-    if length < 1:
-        raise SpotDataError(f"at least {len(SLOTS)} spots are required, got {len(spots)}")
-    return length
+def history_window(spots: list[Spot]) -> int:
+    """How many recent spots are avoided: half the list, so the other half stays eligible."""
+    if len(spots) < _MIN_SPOTS:
+        raise SpotDataError(f"at least {_MIN_SPOTS} spots are required, got {len(spots)}")
+    return len(spots) // 2
 
 
-def select_spot(spots: list[Spot], on_date: date, slot: str) -> Spot:
-    """Spots are reshuffled every cycle (seeded by the cycle number), then dealt out in order."""
-    if slot not in SLOTS:
-        raise ValueError(f"unknown slot: {slot!r}")
-    cycle, offset = divmod(on_date.toordinal(), cycle_length(spots))
-    order = sorted(spots, key=lambda spot: _rank(cycle, spot))
-    return order[offset * len(SLOTS) + SLOTS.index(slot)]
-
-
-def _rank(cycle: int, spot: Spot) -> str:
-    return hashlib.sha256(f"{cycle}:{spot.id}".encode()).hexdigest()
+def choose_spot(spots: list[Spot], recent_ids: list[str], rng: random.Random) -> Spot:
+    """A random spot that is not among the `history_window` most recently used ones."""
+    avoided = set(recent_ids[: history_window(spots)])
+    return rng.choice([spot for spot in spots if spot.id not in avoided])

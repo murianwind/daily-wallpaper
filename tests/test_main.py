@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import random
 from datetime import date, datetime
 
 from PIL import Image
@@ -7,11 +8,13 @@ from pytest_bdd import given, parsers, scenarios, then, when
 
 from support import Recorder, capture, png_bytes
 from wallpaper import cf_client, config, main, spot_selector
+from wallpaper.config import SLOTS
 
 scenarios("features/main.feature")
 
 REQUIRED_ENV = {"CF_ACCOUNT_ID": "account", "CF_API_TOKEN": "token"}
 WEBHOOK = "https://discord.test/hook"
+LATEST_URL = "https://pages.test/latest.json"
 
 
 def _now(day="2026-11-19", hour=6, minute=0):
@@ -29,6 +32,9 @@ def _prepare(ctx, tmp_path, real_spots_path, generate):
     ctx["generate"] = Recorder(generate)
     ctx["notify"] = Recorder(lambda n, *a, **k: True)
     ctx["fetch"] = Recorder(lambda n, *a, **k: "clear")
+    ctx["deployed"] = []  # what the previous deployment's latest.json says was used recently
+    ctx["fetch_recent"] = Recorder(lambda n, *a, **k: list(ctx["deployed"]))
+    ctx["rng"] = random.Random(0)
 
 
 def _run(ctx, slot, day):
@@ -37,14 +43,32 @@ def _run(ctx, slot, day):
         _now(day),
         slot,
         fetch_condition=ctx["fetch"],
+        fetch_recent=ctx["fetch_recent"],
         generate=ctx["generate"],
         notify=ctx["notify"],
+        rng=ctx["rng"],
     )
 
 
-def _todays_spot(ctx, slot="day", day="2026-11-19"):
-    spots = spot_selector.load_spots(ctx["settings"].spots_path)
-    return spot_selector.select_spot(spots, date.fromisoformat(day), slot)
+def _written(ctx):
+    return json.loads((ctx["settings"].out_dir / "latest.json").read_text(encoding="utf-8"))
+
+
+def _spots(ctx):
+    return spot_selector.load_spots(ctx["settings"].spots_path)
+
+
+def _spot_in_prompt(ctx):
+    """The spot whose visual description went into the prompt sent to the generator."""
+    prompt = ctx["generate"].calls[0][0][0]
+    matches = [spot for spot in _spots(ctx) if spot.visual in prompt]
+    assert len(matches) == 1
+    return matches[0]
+
+
+def _use_deployed_history(ctx, ids):
+    ctx["settings"] = dataclasses.replace(ctx["settings"], latest_json_url=LATEST_URL)
+    ctx["deployed"] = ids
 
 
 # ---- slot resolution -------------------------------------------------------------------
@@ -90,15 +114,25 @@ def _load_required(ctx, tmp_path, real_spots_path):
     ctx["loaded"] = main.load_settings(dict(REQUIRED_ENV), real_spots_path, tmp_path)
 
 
-@when("웹훅 값이 빈 문자열인 환경변수로 설정을 불러온다")
+@when("웹훅과 기록 주소 값이 빈 문자열인 환경변수로 설정을 불러온다")
 def _load_empty_webhook(ctx, tmp_path, real_spots_path):
-    env = {**REQUIRED_ENV, "DISCORD_WEBHOOK_URL": "", "WALLPAPER_MODEL": ""}
+    env = {
+        **REQUIRED_ENV,
+        "DISCORD_WEBHOOK_URL": "",
+        "WALLPAPER_MODEL": "",
+        "LATEST_JSON_URL": "",
+    }
     ctx["loaded"] = main.load_settings(env, real_spots_path, tmp_path)
 
 
-@when("모델과 웹훅을 지정한 환경변수로 설정을 불러온다")
+@when("모델과 웹훅과 기록 주소를 지정한 환경변수로 설정을 불러온다")
 def _load_custom(ctx, tmp_path, real_spots_path):
-    env = {**REQUIRED_ENV, "WALLPAPER_MODEL": "@cf/other/model", "DISCORD_WEBHOOK_URL": WEBHOOK}
+    env = {
+        **REQUIRED_ENV,
+        "WALLPAPER_MODEL": "@cf/other/model",
+        "DISCORD_WEBHOOK_URL": WEBHOOK,
+        "LATEST_JSON_URL": LATEST_URL,
+    }
     ctx["loaded"] = main.load_settings(env, real_spots_path, tmp_path)
 
 
@@ -109,16 +143,18 @@ def _config_error_mentions(ctx, first, second):
     assert first in str(ctx["error"]) and second in str(ctx["error"])
 
 
-@then("모델은 기본 모델이고 웹훅은 없다")
+@then("모델은 기본 모델이고 웹훅과 기록 주소는 없다")
 def _defaults(ctx):
     assert ctx["loaded"].model == config.DEFAULT_MODEL
     assert ctx["loaded"].webhook_url is None
+    assert ctx["loaded"].latest_json_url is None
 
 
-@then("설정에 지정한 모델과 웹훅이 들어 있다")
+@then("설정에 지정한 모델과 웹훅과 기록 주소가 들어 있다")
 def _custom(ctx):
     assert ctx["loaded"].model == "@cf/other/model"
     assert ctx["loaded"].webhook_url == WEBHOOK
+    assert ctx["loaded"].latest_json_url == LATEST_URL
 
 
 # ---- run ---------------------------------------------------------------------------------------
@@ -147,6 +183,16 @@ def _weather_is(ctx, condition):
     ctx["fetch"] = Recorder(lambda n, *a, **k: condition)
 
 
+@given("기록 주소가 설정되어 있고 배포된 기록을 따라간다")
+def _follow_deployed(ctx):
+    _use_deployed_history(ctx, [])
+
+
+@given("기록 주소가 설정되어 있고 배포된 기록이 목록의 앞쪽 20곳이다")
+def _deployed_first_twenty(ctx):
+    _use_deployed_history(ctx, [spot.id for spot in _spots(ctx)[:20]])
+
+
 @given("디스코드 웹훅이 설정되어 있다")
 def _webhook(ctx):
     ctx["settings"] = dataclasses.replace(ctx["settings"], webhook_url=WEBHOOK)
@@ -164,13 +210,20 @@ def _run_once(ctx, slot, day):
     ctx["code"] = _run(ctx, slot, day)
 
 
-@when(parsers.parse("day 와 night 로 연달아 {day} 에 실행한다"))
-def _run_both(ctx, day):
+@when(parsers.parse("낮과 밤을 번갈아 {times:d}번 연달아 실행한다"))
+def _run_alternating(ctx, times):
     ctx["spot_ids"] = []
-    for slot in ("day", "night"):
-        assert _run(ctx, slot, day) == 0
-        written = json.loads((ctx["settings"].out_dir / "latest.json").read_text(encoding="utf-8"))
+    for index in range(times):
+        assert _run(ctx, SLOTS[index % len(SLOTS)], "2026-11-19") == 0
+        written = _written(ctx)
         ctx["spot_ids"].append(written["spot_id"])
+        ctx["deployed"] = written["recent_spot_ids"]  # the deploy step publishes latest.json
+
+
+@when(parsers.parse("{slot} 시간대로 {day} 에 {times:d}번 연달아 실행한다"))
+def _run_repeatedly(ctx, slot, day, times):
+    for _ in range(times):
+        assert _run(ctx, slot, day) == 0
 
 
 @when("환경변수 없이 명령줄로 실행한다")
@@ -206,11 +259,11 @@ def _jpg_missing(ctx):
     )
 )
 def _json_fields(ctx, slot, weather, season):
-    written = json.loads((ctx["settings"].out_dir / "latest.json").read_text(encoding="utf-8"))
+    written = _written(ctx)
     assert written["slot"] == slot
     assert written["weather"] == weather
     assert written["season"] == season
-    spot = _todays_spot(ctx, slot)
+    spot = _spot_in_prompt(ctx)
     assert written["spot_id"] == spot.id
     assert written["spot_area"] == spot.area
 
@@ -220,10 +273,9 @@ def _no_notification(ctx):
     assert ctx["notify"].calls == []
 
 
-@then("생성기에 보낸 프롬프트에 오늘의 명승지 묘사가 들어 있다")
+@then("생성기에 보낸 프롬프트에 고른 명승지 묘사가 들어 있다")
 def _prompt_has_spot(ctx):
-    prompt = ctx["generate"].calls[0][0][0]
-    assert _todays_spot(ctx, "night").visual in prompt
+    assert _written(ctx)["spot_id"] == _spot_in_prompt(ctx).id
 
 
 @then(parsers.parse('생성기에 보낸 프롬프트에 "{text}" 가 들어 있다'))
@@ -240,9 +292,39 @@ def _generator_args(ctx, model, width, height):
     assert kwargs["api_token"] == "token"
 
 
-@then("두 실행의 명승지가 서로 다르다")
-def _different_spots(ctx):
-    assert ctx["spot_ids"][0] != ctx["spot_ids"][1]
+@then(parsers.parse("{times:d}번의 명승지가 모두 다르다"))
+def _all_different_spots(ctx, times):
+    assert len(ctx["spot_ids"]) == times
+    assert len(set(ctx["spot_ids"])) == times
+
+
+@then("고른 명승지는 배포된 기록에 없다")
+def _not_in_deployed(ctx):
+    assert _written(ctx)["spot_id"] not in ctx["deployed"]
+
+
+@then("latest.json 의 기록은 고른 명승지가 맨 앞이고 이전 기록 19곳이 이어진다")
+def _history_updated(ctx):
+    written = _written(ctx)
+    assert written["recent_spot_ids"] == [written["spot_id"], *ctx["deployed"][:19]]
+
+
+@then("기록은 읽지 않았다")
+def _history_not_read(ctx):
+    assert ctx["fetch_recent"].calls == []
+
+
+@then("latest.json 의 기록은 고른 명승지 하나뿐이다")
+def _history_single(ctx):
+    written = _written(ctx)
+    assert written["recent_spot_ids"] == [written["spot_id"]]
+
+
+@then("두 번의 생성 시드가 서로 다르고 latest.json 에 마지막 시드가 기록된다")
+def _seeds_differ(ctx):
+    seeds = [call[1]["seed"] for call in ctx["generate"].calls]
+    assert len(seeds) == 2 and seeds[0] != seeds[1]
+    assert _written(ctx)["seed"] == seeds[-1]
 
 
 @then("latest.jpg 는 이전 내용 그대로다")
@@ -250,9 +332,9 @@ def _previous_kept(ctx):
     assert (ctx["settings"].out_dir / "latest.jpg").read_bytes() == b"OLD IMAGE"
 
 
-@then("디스코드 알림이 1번 갔고 메시지에 오늘의 명승지 이름이 들어 있다")
+@then("디스코드 알림이 1번 갔고 메시지에 고른 명승지 이름이 들어 있다")
 def _notified(ctx):
     assert len(ctx["notify"].calls) == 1
     args = ctx["notify"].calls[0][0]
     assert args[0] == WEBHOOK
-    assert _todays_spot(ctx).name_ko in args[1]
+    assert _spot_in_prompt(ctx).name_ko in args[1]
