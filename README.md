@@ -56,7 +56,7 @@ GitHub Actions (Home Assistant 호출: 04:10 / 16:10 KST)
 
 ### Home Assistant 호출 설정
 
-`configuration.yaml` 의 `rest_command` (토큰은 weather-calendar 용을 쓰려면 이 저장소 접근 권한이 필요합니다):
+`configuration.yaml` 의 `rest_command` (이 저장소 전용 fine-grained 토큰을 따로 발급해 `secrets.yaml` 의 `github_wallpaper_token` 에 `Bearer <토큰>` 형태로 넣습니다. 저장소는 daily-wallpaper 하나만, 저장소 권한은 Contents 읽기/쓰기):
 
 ```yaml
 rest_command:
@@ -64,7 +64,7 @@ rest_command:
     url: "https://api.github.com/repos/murianwind/daily-wallpaper/dispatches"
     method: POST
     headers:
-      Authorization: !secret github_weather_token
+      Authorization: !secret github_wallpaper_token
       Accept: "application/vnd.github.v3+json"
     payload: '{"event_type": "wallpaper-update"}'
     content_type: "application/json"
