@@ -13,27 +13,32 @@ def _workflow():
     return yaml.safe_load(WORKFLOW_PATH.read_text(encoding="utf-8"))
 
 
-def _schedules(workflow):
+def _triggers(workflow):
     # PyYAML reads the bare key `on` as boolean True.
-    return workflow[True]["schedule"]
+    return workflow[True]
 
 
-@then(parsers.parse("예약 실행은 {count:d}건이다"))
-def _schedule_count(workflow, count):
-    assert len(_schedules(workflow)) == count
+@then(parsers.parse('외부 호출 이벤트는 "{event}" 하나다'))
+def _dispatch_event(workflow, event):
+    assert _triggers(workflow)["repository_dispatch"]["types"] == [event]
 
 
-@then(parsers.parse('모든 예약 실행의 시간대는 "{zone}" 이다'))
-def _timezone(workflow, zone):
-    assert all(entry.get("timezone") == zone for entry in _schedules(workflow))
+@then("수동 실행도 가능하다")
+def _manual_run(workflow):
+    assert "workflow_dispatch" in _triggers(workflow)
 
 
-@then(parsers.parse('예약 실행 시각은 "{first}" 와 "{second}" 이다'))
-def _cron_times(workflow, first, second):
-    assert sorted(entry["cron"] for entry in _schedules(workflow)) == sorted([first, second])
+@then("예약 실행은 없다")
+def _no_schedule(workflow):
+    assert "schedule" not in _triggers(workflow)
 
 
-@then(parsers.parse('예약 실행의 시간대 입력값은 "{expected}" 이다'))
+@then("예약 실행을 살리기 위한 keepalive 작업도 없다")
+def _no_keepalive(workflow):
+    assert "keepalive" not in workflow["jobs"]
+
+
+@then(parsers.parse('생성 단계의 시간대 입력값은 "{expected}" 이다'))
 def _slot_input(workflow, expected):
     steps = workflow["jobs"]["generate"]["steps"]
     slot = next(step["env"]["SLOT"] for step in steps if "env" in step and "SLOT" in step["env"])

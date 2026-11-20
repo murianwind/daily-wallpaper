@@ -5,7 +5,7 @@
 이미지는 아이폰에 저장되지 않고 매번 내려받아 바로 적용됩니다.
 
 ```
-GitHub Actions (04:07 / 16:07 KST)
+GitHub Actions (Home Assistant 호출: 04:10 / 16:10 KST)
   명승지 선택 → 서울 날씨(Open-Meteo) → 프롬프트 조립
   → Cloudflare Workers AI 로 생성 (실패 시 최대 3회) → 1179x2556 JPEG → GitHub Pages(latest.jpg)
 아이폰 단축어 자동화 (07:00 / 18:00) → latest.jpg 다운로드 → 배경화면 설정
@@ -48,11 +48,29 @@ GitHub Actions (04:07 / 16:07 KST)
 ## 운영 메모
 
 - 공개 저장소의 Actions 로그는 누구나 볼 수 있습니다. 코드는 URL·토큰·계정 ID를 로그에 남기지 않도록 작성되어 있습니다.
-- 공개 저장소는 **60일 동안 활동이 없으면 예약 실행이 자동으로 꺼집니다.** 워크플로의 `keepalive` 작업이
-  이를 막아 보려고 매일 워크플로를 다시 enable 하지만, 실제로 막아지는지는 두 달 뒤에야 확인됩니다.
-  예약 실행이 멈추면 Actions 탭에서 워크플로를 다시 Enable 하세요.
-- GitHub 예약 실행은 몇 분에서 수십 분 늦을 수 있어 생성(04:07, 16:07)과 단축어(07:00, 18:00) 사이에 여유를 뒀습니다.
-- 크론은 `timezone: "Asia/Seoul"` 로 한국 시각 기준입니다. 낮/밤은 실행 시각(한국 12시 이전이면 낮)으로 정해지므로, 예약 실행이 몇 시간 늦어져도 뒤바뀌지 않습니다.
+- 정시 실행은 GitHub `schedule` 이 아니라 **Home Assistant 가 `repository_dispatch` 로 호출**합니다.
+  GitHub `schedule` 은 이 계정에서 3~7시간씩 늦어지는 것이 관찰되어 쓰지 않습니다(그래서 60일 비활동 자동
+  중지 문제도 없습니다). 호출은 04:10(낮 그림), 16:10(밤 그림)이고 단축어는 05:00, 17:00 에 받아갑니다.
+- 낮/밤은 호출 시각(한국 12시 이전이면 낮)으로 정해집니다. 수동 실행은 Actions 탭의 *Run workflow* 를 쓰세요.
+- 호출이 빠지면(Home Assistant 가 꺼져 있었던 경우 등) 그 회차의 이미지는 갱신되지 않고 이전 이미지가 유지됩니다.
+
+### Home Assistant 호출 설정
+
+`configuration.yaml` 의 `rest_command` (토큰은 weather-calendar 용을 쓰려면 이 저장소 접근 권한이 필요합니다):
+
+```yaml
+rest_command:
+  trigger_wallpaper_update:
+    url: "https://api.github.com/repos/murianwind/daily-wallpaper/dispatches"
+    method: POST
+    headers:
+      Authorization: !secret github_weather_token
+      Accept: "application/vnd.github.v3+json"
+    payload: '{"event_type": "wallpaper-update"}'
+    content_type: "application/json"
+```
+
+자동화에는 `time` 트리거(`04:10:00`, `16:10:00`)와 `rest_command.trigger_wallpaper_update` 동작을 추가합니다.
 
 ## 바꾸는 방법
 
@@ -61,7 +79,7 @@ GitHub Actions (04:07 / 16:07 KST)
 | 명승지 추가/삭제/묘사 수정 | `data/spots.json` (`id`는 중복 불가, `visual`은 영어 시각 묘사). 최근 기록 반영 길이는 곳 수의 절반이라 자동으로 맞춰집니다 |
 | 화풍, 계절·날씨·시간대 문구 | `src/wallpaper/prompt_builder.py` |
 | 날씨 기준 지점(서울), 해상도, 모델, 재시도 횟수 | `src/wallpaper/config.py` |
-| 생성 시각 | `.github/workflows/wallpaper.yml` 의 cron (`timezone: "Asia/Seoul"` 한국 시각 기준) |
+| 생성 시각 | Home Assistant 자동화의 `time` 트리거 (워크플로에는 시각이 없음) |
 
 FLUX 계열 모델은 "박연폭포" 같은 이름을 정확히 모를 수 있어서, 이름 대신 `visual` 의 영어 묘사로 장면을 그립니다.
 결과는 실제 지형의 재현이 아니라 그 분위기의 산수화입니다. 묘사가 마음에 들지 않으면 `spots.json` 의 `visual` 만 고치면 됩니다.
