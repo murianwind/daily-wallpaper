@@ -18,6 +18,7 @@ from .config import (
     KST,
     SEOUL_LATITUDE,
     SEOUL_LONGITUDE,
+    SKY_SIDES,
     SLOTS,
     WALLPAPER_HEIGHT,
     WALLPAPER_WIDTH,
@@ -87,9 +88,10 @@ def run(
     recent = fetch_recent(settings.latest_json_url) if settings.latest_json_url else []
     spot = spot_selector.choose_spot(spots, recent, rng)
     seed = rng.randrange(_SEED_LIMIT)
+    sky_side = rng.choice(SKY_SIDES)
     condition = fetch_condition(SEOUL_LATITUDE, SEOUL_LONGITUDE)
     season = prompt_builder.season_of(today)
-    prompt = prompt_builder.build_prompt(spot, slot, season, condition)
+    prompt = prompt_builder.build_prompt(spot, slot, season, condition, sky_side)
     logger.info("slot=%s spot=%s weather=%s season=%s", slot, spot.id, condition, season)
 
     try:
@@ -122,6 +124,7 @@ def run(
             "weather": condition,
             "model": settings.model,
             "seed": seed,
+            "sky_side": sky_side,
             "generated_at": now.isoformat(),
             history.HISTORY_KEY: history.record(
                 recent, spot.id, spot_selector.history_window(spots)

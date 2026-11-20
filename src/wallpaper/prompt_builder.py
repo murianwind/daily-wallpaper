@@ -2,6 +2,7 @@
 
 from datetime import date
 
+from .config import SKY_SIDES
 from .spot_selector import Spot
 
 STYLE = (
@@ -9,7 +10,9 @@ STYLE = (
     "Jeong Seon, strictly monochrome black ink wash in shades of grey, no color, "
     "bold dry-brush strokes, dense vertical texture strokes on granite cliffs, "
     "layered ink wash, aged hanji paper texture in neutral grey, vertical "
-    "hanging-scroll composition, calm empty sky in the upper third, "
+    "hanging-scroll composition, distant panoramic view seen from far away, "
+    "a wide vista where the whole landscape appears small in a vast open space, "
+    "calm empty sky above the mountains, "
     "painting fills the whole canvas edge to edge, no frame, no paper margin, "
     "no text, no seals, no signature, no border."
 )
@@ -73,7 +76,9 @@ def season_of(day: date) -> str:
     return "winter"
 
 
-def build_prompt(spot: Spot, slot: str, season: str, condition: str) -> str:
+def build_prompt(spot: Spot, slot: str, season: str, condition: str, sky_side: str) -> str:
+    if sky_side not in SKY_SIDES:
+        raise ValueError(f"unknown sky side: {sky_side!r}")
     time_phrase = _lookup(_TIME_PHRASES, slot, "slot")
     season_phrase = _lookup(_SEASON_PHRASES, season, "season")
     weather_phrase = _lookup(
@@ -81,7 +86,9 @@ def build_prompt(spot: Spot, slot: str, season: str, condition: str) -> str:
     )
     return (
         f"{STYLE} Scene: {spot.visual}. Season: {season_phrase}. "
-        f"Weather: {weather_phrase}. Time: {time_phrase}."
+        f"Weather: {weather_phrase}. Time: {time_phrase}. "
+        f"Sky: any sun or moon is small and set in the {sky_side} part of the sky, "
+        "never at the center."
     )
 
 

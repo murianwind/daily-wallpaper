@@ -338,3 +338,21 @@ def _notified(ctx):
     args = ctx["notify"].calls[0][0]
     assert args[0] == WEBHOOK
     assert _spot_in_prompt(ctx).name_ko in args[1]
+
+
+def _side_in_prompt(prompt):
+    sides = [side for side in config.SKY_SIDES if f"in the {side} part of the sky" in prompt]
+    assert len(sides) == 1
+    return sides[0]
+
+
+@then("latest.json 의 해달 위치는 프롬프트에 쓴 쪽과 같다")
+def _side_recorded(ctx):
+    prompt = ctx["generate"].calls[0][0][0]
+    assert _written(ctx)["sky_side"] == _side_in_prompt(prompt)
+
+
+@then("프롬프트에 해달 위치가 왼쪽인 경우와 오른쪽인 경우가 모두 나왔다")
+def _both_sides_used(ctx):
+    sides = {_side_in_prompt(call[0][0]) for call in ctx["generate"].calls}
+    assert sides == set(config.SKY_SIDES)

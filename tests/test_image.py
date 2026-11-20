@@ -4,7 +4,7 @@ from PIL import Image
 from pytest_bdd import given, parsers, scenarios, then, when
 
 from support import capture, png_bytes
-from wallpaper import image_post
+from wallpaper import config, image_post
 
 scenarios("features/image.feature")
 
@@ -44,6 +44,15 @@ def _framed():
             height - round(height * 0.06),
         ),
     )
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+@given("왼쪽은 검은색 오른쪽은 흰색인 1104x1600 PNG 이미지", target_fixture="raw")
+def _half_black_half_white():
+    image = Image.new("L", (1104, 1600), 255)
+    image.paste(0, (0, 0, 552, 1600))
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
     return buffer.getvalue()
@@ -103,6 +112,39 @@ def _edges_have_no_frame(ctx):
     for x_ratio in (0.0, 0.5, 0.999):
         for y_ratio in (0.0, 0.5, 0.999):
             assert _pixel(ctx, x_ratio, y_ratio)[0] < 60
+
+
+def _gray(ctx, x_ratio, y_ratio):
+    return _pixel(ctx, x_ratio, y_ratio)[0]
+
+
+@then("결과의 위쪽 3분의 1 표본 픽셀은 모두 같은 밝기이다")
+def _top_third_blank(ctx):
+    levels = {
+        _gray(ctx, x_ratio, y_ratio)
+        for x_ratio in (0.05, 0.25, 0.5, 0.75, 0.95)
+        for y_ratio in (0.02, 0.15, 0.3)
+    }
+    assert max(levels) - min(levels) <= 2
+
+
+@then("결과의 아래쪽 표본에서 왼쪽은 검고 오른쪽은 밝다")
+def _lower_part_has_picture(ctx):
+    for y_ratio in (0.6, 0.8, 0.98):
+        assert _gray(ctx, 0.25, y_ratio) < 40
+        assert _gray(ctx, 0.75, y_ratio) > 215
+
+
+@then("결과의 경계 바로 아래 왼쪽 픽셀은 빈 배경과 거의 같은 밝기이다")
+def _seam_is_soft(ctx):
+    blank = _gray(ctx, 0.25, 0.1)
+    just_below = _gray(ctx, 0.25, config.TOP_BLANK_RATIO + 0.002)
+    assert abs(just_below - blank) <= 30
+
+
+@then("결과의 경계에서 충분히 내려간 왼쪽 픽셀은 검다")
+def _picture_resumes(ctx):
+    assert _gray(ctx, 0.25, config.TOP_BLANK_RATIO + config.TOP_FADE_RATIO + 0.03) < 40
 
 
 @then("결과의 모든 표본 픽셀은 회색이다")

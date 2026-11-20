@@ -5,7 +5,7 @@ from pytest_bdd import given, parsers, scenarios, then, when
 
 from support import capture
 from wallpaper import prompt_builder, weather
-from wallpaper.config import SLOTS
+from wallpaper.config import SKY_SIDES, SLOTS
 from wallpaper.spot_selector import Spot
 
 scenarios("features/prompt.feature")
@@ -48,16 +48,22 @@ def _season_is(season, expected):
 
 
 @when(
-    parsers.parse("{slot} 시간대, {season} 계절, {condition} 날씨로 프롬프트를 만든다"),
+    parsers.parse(
+        "{slot} 시간대, {season} 계절, {condition} 날씨, {side} 쪽으로 프롬프트를 만든다"
+    ),
     target_fixture="prompt",
 )
-def _build(spot, slot, season, condition):
-    return prompt_builder.build_prompt(spot, slot, season, condition)
+def _build(spot, slot, season, condition, side):
+    return prompt_builder.build_prompt(spot, slot, season, condition, side)
 
 
-@when(parsers.parse("{slot} 시간대, {season} 계절, {condition} 날씨로 프롬프트를 만들려 한다"))
-def _try_build(spot, ctx, slot, season, condition):
-    _, ctx["error"] = capture(prompt_builder.build_prompt, spot, slot, season, condition)
+@when(
+    parsers.parse(
+        "{slot} 시간대, {season} 계절, {condition} 날씨, {side} 쪽으로 프롬프트를 만들려 한다"
+    )
+)
+def _try_build(spot, ctx, slot, season, condition, side):
+    _, ctx["error"] = capture(prompt_builder.build_prompt, spot, slot, season, condition, side)
 
 
 @then(parsers.parse('프롬프트에 "{text}" 가 들어 있다'))
@@ -75,16 +81,18 @@ def _all_combinations(spot):
     for slot in SLOTS:
         for season in _all_seasons():
             for condition in _all_conditions():
-                assert prompt_builder.build_prompt(spot, slot, season, condition)
+                for side in SKY_SIDES:
+                    assert prompt_builder.build_prompt(spot, slot, season, condition, side)
 
 
 def _every_prompt(spots):
     return [
-        prompt_builder.build_prompt(spot, slot, season, condition)
+        prompt_builder.build_prompt(spot, slot, season, condition, side)
         for spot in spots
         for slot in SLOTS
         for season in _all_seasons()
         for condition in _all_conditions()
+        for side in SKY_SIDES
     ]
 
 
