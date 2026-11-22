@@ -1,6 +1,6 @@
 import io
 
-from PIL import Image, ImageDraw, ImageStat
+from PIL import Image, ImageStat
 from pytest_bdd import given, parsers, scenarios, then, when
 
 from support import capture, png_bytes
@@ -70,10 +70,10 @@ def _dark_gray():
     return png_bytes(1104, 1600, color=DARK_GRAY, mode="L")
 
 
-@given("밝은 배경 한가운데 흰 달이 있는 1104x1600 PNG 이미지", target_fixture="raw")
-def _moon_on_bright_sky():
+@given("왼쪽은 어둡고 오른쪽은 밝은 하늘 1104x1600 PNG 이미지", target_fixture="raw")
+def _two_tone_sky():
     image = Image.new("L", (1104, 1600), 200)
-    ImageDraw.Draw(image).ellipse((492, 740, 612, 860), fill=255)
+    image.paste(120, (0, 0, 552, 1600))
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
     return buffer.getvalue()
@@ -139,35 +139,6 @@ def _gray(ctx, x_ratio, y_ratio):
     return _pixel(ctx, x_ratio, y_ratio)[0]
 
 
-@then("결과의 위쪽 3분의 1 표본 픽셀은 모두 같은 밝기이다")
-def _top_third_blank(ctx):
-    levels = {
-        _gray(ctx, x_ratio, y_ratio)
-        for x_ratio in (0.05, 0.25, 0.5, 0.75, 0.95)
-        for y_ratio in (0.02, 0.15, 0.3)
-    }
-    assert max(levels) - min(levels) <= 2
-
-
-@then("결과의 아래쪽 표본에서 왼쪽은 검고 오른쪽은 밝다")
-def _lower_part_has_picture(ctx):
-    for y_ratio in (0.6, 0.8, 0.98):
-        assert _gray(ctx, 0.25, y_ratio) < 40
-        assert _gray(ctx, 0.75, y_ratio) > 215
-
-
-@then("결과의 경계 바로 아래 왼쪽 픽셀은 빈 배경과 거의 같은 밝기이다")
-def _seam_is_soft(ctx):
-    blank = _gray(ctx, 0.25, 0.1)
-    just_below = _gray(ctx, 0.25, config.TOP_BLANK_RATIO + 0.002)
-    assert abs(just_below - blank) <= 30
-
-
-@then("결과의 경계에서 충분히 내려간 왼쪽 픽셀은 검다")
-def _picture_resumes(ctx):
-    assert _gray(ctx, 0.25, config.TOP_BLANK_RATIO + config.TOP_FADE_RATIO + 0.03) < 40
-
-
 @when(parsers.parse("{width:d}x{height:d} 크기로 {side} 쪽 {phase} 달과 함께 변환한다"))
 def _convert_with_moon(raw, ctx, width, height, side, phase):
     moon = moon_painter.Moon(phase=phase, side=side)
@@ -188,22 +159,62 @@ def _moon_spot_not_bright(ctx):
     assert _moon_spot(ctx) < 150
 
 
+def _row(ctx, y_ratio):
+    return [_gray(ctx, x_ratio, y_ratio) for x_ratio in (0.05, 0.25, 0.5, 0.75, 0.95)]
+
+
+@then("결과의 위쪽 3분의 1 은 같은 높이에서 가로로 모두 같은 밝기이다")
+def _blank_is_horizontally_even(ctx):
+    for y_ratio in (0.02, 0.15, 0.3):
+        levels = _row(ctx, y_ratio)
+        assert max(levels) - min(levels) <= 2
+
+
+@then("결과의 맨 위 픽셀은 빈 영역 아래쪽 픽셀보다 어둡다")
+def _top_is_darker(ctx):
+    assert _gray(ctx, 0.5, 0.005) + 10 <= _gray(ctx, 0.5, config.TOP_BLANK_RATIO - 0.01)
+
+
+@then("결과의 위쪽 빈 영역은 오른쪽이 왼쪽보다 밝다")
+def _blank_follows_sky(ctx):
+    assert _gray(ctx, 0.95, 0.3) >= _gray(ctx, 0.05, 0.3) + 15
+
+
+@then("결과의 빈 영역 아래쪽과 그림 하늘의 밝기는 거의 같다")
+def _no_seam(ctx):
+    above = _gray(ctx, 0.5, config.TOP_BLANK_RATIO - 0.004)
+    below = _gray(ctx, 0.5, config.TOP_BLANK_RATIO + config.TOP_FADE_RATIO + 0.01)
+    assert abs(above - below) <= 6
+
+
+@then("결과의 아래쪽 표본에서 오른쪽은 왼쪽보다 훨씬 밝다")
+def _picture_contrast_kept(ctx):
+    for y_ratio in (0.6, 0.8, 0.98):
+        assert _gray(ctx, 0.75, y_ratio) >= _gray(ctx, 0.25, y_ratio) + 60
+
+
+@then("결과의 아래쪽 왼쪽 표본은 최소 검정 밝기 이상이다")
+def _blacks_not_crushed(ctx):
+    for y_ratio in (0.6, 0.8, 0.98):
+        assert _gray(ctx, 0.25, y_ratio) >= config.MIN_BLACK_LEVEL - 2
+
+
 @then("결과 전체의 평균 밝기는 상한 이하이다")
 def _mean_below_ceiling(ctx):
     with Image.open(io.BytesIO(ctx["result"])) as image:
         assert ImageStat.Stat(image.convert("L")).mean[0] <= config.MAX_MEAN_BRIGHTNESS + 2
 
 
+@then("결과 전체의 평균 밝기는 상한 근처이다")
+def _mean_near_ceiling(ctx):
+    with Image.open(io.BytesIO(ctx["result"])) as image:
+        mean = ImageStat.Stat(image.convert("L")).mean[0]
+    assert config.MAX_MEAN_BRIGHTNESS - 12 <= mean <= config.MAX_MEAN_BRIGHTNESS + 2
+
+
 @then("결과의 가운데 픽셀은 어두운 회색의 밝기이다")
 def _center_is_dark_gray(ctx):
     _assert_gray_level(_pixel(ctx, 0.5, 0.5), DARK_GRAY)
-
-
-@then("결과의 달 자리 픽셀은 밝고 배경 픽셀은 어둡다")
-def _moon_stays_bright(ctx):
-    moon_y = config.TOP_BLANK_RATIO + (1 - config.TOP_BLANK_RATIO) / 2
-    assert _gray(ctx, 0.5, moon_y) > 235
-    assert _gray(ctx, 0.2, 0.8) < config.MAX_MEAN_BRIGHTNESS + 25
 
 
 @then("결과의 모든 표본 픽셀은 회색이다")

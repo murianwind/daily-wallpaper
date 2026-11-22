@@ -1,22 +1,28 @@
 """Turn the raw generated image into an iPhone-sized grayscale JPEG.
 
-The picture is trimmed, fitted into the lower part of the screen, darkened if it is too bright (so
-iOS shows white text on it) and the top third is left as a plain blank background that the picture
-fades into. The moon, if any, is painted last so the darkening does not dim it.
+The picture is trimmed and fitted into the lower part of the screen. If it is too bright (so iOS
+would show dark text) its tones are compressed to a dark range, keeping detail. The top third is a
+blank sky that continues the picture's own sky tones and fades into it. The moon, if any, is
+painted last so the darkening does not dim it.
 """
 
 import io
 
-from PIL import Image, ImageStat, UnidentifiedImageError
+from PIL import Image, ImageChops, ImageStat, UnidentifiedImageError
 
-from .config import EDGE_TRIM_RATIO, MAX_MEAN_BRIGHTNESS, TOP_BLANK_RATIO, TOP_FADE_RATIO
+from .config import (
+    EDGE_TRIM_RATIO,
+    MAX_MEAN_BRIGHTNESS,
+    MIN_BLACK_LEVEL,
+    SKY_TONE_COLUMNS,
+    TOP_BLANK_RATIO,
+    TOP_DIM_RATIO,
+    TOP_FADE_RATIO,
+)
 from .moon_painter import Moon, paint_moon
 
 JPEG_QUALITY = 92
 _OPAQUE = 255
-# Caps the darkening so a near-white picture is not crushed to solid black.
-_MAX_GAMMA = 6.0
-_GAMMA_SEARCH_STEPS = 20
 
 
 class ImageProcessingError(RuntimeError):
@@ -31,9 +37,12 @@ def to_wallpaper(raw: bytes, width: int, height: int, moon: Moon | None = None) 
         raise ImageProcessingError("generated data is not a valid image") from exc
 
     blank_height = round(height * TOP_BLANK_RATIO)
-    picture = _darken(_cover_fit(_trim_edges(image), width, height - blank_height))
-    canvas = _blank_canvas(picture, width, height, round(height * TOP_FADE_RATIO))
-    canvas.paste(picture, (0, blank_height), _fade_mask(picture, round(height * TOP_FADE_RATIO)))
+    fade = round(height * TOP_FADE_RATIO)
+    picture = _compress_tones(_cover_fit(_trim_edges(image), width, height - blank_height))
+
+    canvas = Image.new("L", (width, height))
+    canvas.paste(_sky(picture, blank_height, fade), (0, 0))
+    canvas.paste(picture, (0, blank_height), _fade_mask(picture, fade))
     if moon is not None:
         paint_moon(canvas, moon)
 
@@ -59,37 +68,37 @@ def _cover_fit(image: Image.Image, width: int, height: int) -> Image.Image:
     return resized.crop((left, top, left + width, top + height))
 
 
-def _darken(image: Image.Image) -> Image.Image:
-    """Apply the weakest gamma that brings the mean brightness down to the ceiling.
+def _compress_tones(image: Image.Image) -> Image.Image:
+    """Map black..white linearly onto MIN_BLACK_LEVEL..(a level that gives the mean ceiling).
 
-    A gamma curve keeps pure white white, so a bright moon survives the darkening.
+    Unlike a gamma curve this keeps the shadows apart instead of crushing them to black.
     """
-    histogram = image.histogram()
-    pixels = sum(histogram)
-
-    def mean_with(gamma: float) -> float:
-        return (
-            sum(count * _gamma_level(level, gamma) for level, count in enumerate(histogram))
-            / pixels
-        )
-
-    if mean_with(1.0) <= MAX_MEAN_BRIGHTNESS:
+    mean = ImageStat.Stat(image).mean[0]
+    if mean <= MAX_MEAN_BRIGHTNESS:
         return image
-    low, high = 1.0, _MAX_GAMMA
-    for _ in range(_GAMMA_SEARCH_STEPS):
-        middle = (low + high) / 2
-        low, high = (middle, high) if mean_with(middle) > MAX_MEAN_BRIGHTNESS else (low, middle)
-    return image.point([round(_gamma_level(level, high)) for level in range(256)])
+    scale = (MAX_MEAN_BRIGHTNESS - MIN_BLACK_LEVEL) / mean
+    return image.point([round(MIN_BLACK_LEVEL + scale * level) for level in range(256)])
 
 
-def _gamma_level(level: int, gamma: float) -> float:
-    return _OPAQUE * (level / _OPAQUE) ** gamma
+def _sky(picture: Image.Image, blank_height: int, fade: int) -> Image.Image:
+    """The sky above the picture (`blank_height` rows) plus `fade` rows under the picture's top.
 
+    It repeats the picture's top-band tones, smoothly varied across the width, and gets darker
+    towards the top edge, so it continues the picture's own sky instead of a separate flat block.
+    """
+    zones = picture.crop((0, 0, picture.width, max(1, fade))).resize(
+        (SKY_TONE_COLUMNS, 1), Image.Resampling.BOX
+    )
+    tones = zones.resize((picture.width, 1), Image.Resampling.BICUBIC)
+    sky = tones.resize((picture.width, blank_height + fade), Image.Resampling.NEAREST)
 
-def _blank_canvas(picture: Image.Image, width: int, height: int, band: int) -> Image.Image:
-    """A canvas filled with the tone of the picture's top rows, so the blank blends into it."""
-    top_band = picture.crop((0, 0, width, max(1, band)))
-    return Image.new("L", (width, height), int(ImageStat.Stat(top_band).median[0]))
+    dimming = Image.new("L", sky.size, _OPAQUE)
+    ramp = Image.linear_gradient("L").resize((picture.width, blank_height))
+    dimming.paste(
+        ramp.point(lambda v: round(_OPAQUE * (TOP_DIM_RATIO + (1 - TOP_DIM_RATIO) * v / _OPAQUE))),
+        (0, 0),
+    )
+    return ImageChops.multiply(sky, dimming)
 
 
 def _fade_mask(picture: Image.Image, fade: int) -> Image.Image:

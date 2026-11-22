@@ -21,9 +21,15 @@ EDGE_TRIM_RATIO = 0.07
 # Fraction of the screen height kept as plain blank background above the picture.
 TOP_BLANK_RATIO = 1 / 3
 # Fraction of the screen height over which the picture fades into that blank background.
-TOP_FADE_RATIO = 0.05
+TOP_FADE_RATIO = 0.10
+# Brightness of the blank sky at the very top edge, relative to where it meets the picture.
+TOP_DIM_RATIO = 0.8
+# The blank sky takes the picture's sky tones in this many horizontal zones, blended smoothly.
+SKY_TONE_COLUMNS = 8
 # iOS picks white text on dark wallpapers, so the picture's mean brightness (0-255) is capped here.
 MAX_MEAN_BRIGHTNESS = 90
+# Darkening lifts black to this level instead of crushing it, so dark ink detail stays readable.
+MIN_BLACK_LEVEL = 24
 # The moon is painted by us (image models draw moon phases unreliably): just below the blank top
 # area, on the left or right, never at the centre. Sizes and positions are fractions of the screen.
 MOON_RADIUS_RATIO = 0.045
