@@ -27,7 +27,7 @@ MAX_MEAN_BRIGHTNESS = 90
 # The moon is painted by us (image models draw moon phases unreliably): just below the blank top
 # area, on the left or right, never at the centre. Sizes and positions are fractions of the screen.
 MOON_RADIUS_RATIO = 0.045
-MOON_CENTER_Y_RATIO = 0.41
+MOON_CENTER_Y_RATIO = 0.37
 MOON_CENTER_X_RATIOS = {"left": 0.25, "right": 0.75}
 MOON_LEVEL = 235
 # Weather in which the night moon can be seen (anything else hides it behind clouds, rain or fog).

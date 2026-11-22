@@ -103,7 +103,7 @@ def run(
     moon = moon_phase.phase_of(now)
     condition = fetch_condition(SEOUL_LATITUDE, SEOUL_LONGITUDE)
     season = prompt_builder.season_of(today)
-    prompt = prompt_builder.build_prompt(spot, slot, season, condition)
+    prompt = prompt_builder.build_prompt(spot, slot, season, condition, _opposite_side(sky_side))
     logger.info("slot=%s spot=%s weather=%s season=%s", slot, spot.id, condition, season)
 
     try:
@@ -147,6 +147,11 @@ def run(
         },
     )
     return 0
+
+
+def _opposite_side(side: str) -> str:
+    """Waterfall streams go opposite the moon so the two never crowd the same side."""
+    return next(other for other in SKY_SIDES if other != side)
 
 
 def _visible_moon(slot: str, condition: str, phase: str, side: str) -> Moon | None:

@@ -47,6 +47,28 @@ Feature: 프롬프트 조립
     Then 프롬프트에 "empty sky" 가 들어 있다
     And 프롬프트에 "upper third" 가 들어 있지 않다
 
+  Scenario Outline: 폭포 장면은 물줄기를 고른 쪽 3분의 1에 두고 가운데는 피한다
+    Given 박연폭포 명승지
+    When day 시간대, autumn 계절, clear 날씨, <side> 쪽 물줄기로 프롬프트를 만든다
+    Then 프롬프트에 "<present>" 가 들어 있다
+    And 프롬프트에 "<absent>" 가 들어 있지 않다
+    And 프롬프트에 "never in the center of the image" 가 들어 있다
+
+    Examples:
+      | side  | present                       | absent                        |
+      | left  | in the left third of the frame  | in the right third of the frame |
+      | right | in the right third of the frame | in the left third of the frame  |
+
+  Scenario: 폭포가 아닌 장면에는 물줄기 구도 문구가 없다
+    Given 비로봉 명승지
+    When day 시간대, autumn 계절, clear 날씨, left 쪽 물줄기로 프롬프트를 만든다
+    Then 프롬프트에 "waterfall's stream" 가 들어 있지 않다
+
+  Scenario: 알 수 없는 물줄기 위치는 거부된다
+    Given 박연폭포 명승지
+    When day 시간대, autumn 계절, clear 날씨, center 쪽 물줄기로 프롬프트를 만들려 한다
+    Then 프롬프트 입력 오류가 발생한다
+
   Scenario: 명승지 묘사가 들어간다
     Given 박연폭포 명승지
     When day 시간대, autumn 계절, clear 날씨로 프롬프트를 만든다

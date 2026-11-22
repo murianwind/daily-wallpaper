@@ -383,3 +383,27 @@ def _moon_drawn(ctx):
 @then("latest.jpg 의 달 자리는 밝지 않다")
 def _moon_not_drawn(ctx):
     assert _moon_spot_level(ctx) < 150
+
+
+@given("폭포 명승지만 있는 명승지 파일을 쓴다")
+def _only_waterfalls(ctx, tmp_path):
+    items = [
+        {
+            "id": f"falls-{index}",
+            "name_ko": f"폭포{index}",
+            "area": "x",
+            "visual": "v",
+            "waterfall": True,
+        }
+        for index in (1, 2)
+    ]
+    path = tmp_path / "waterfalls.json"
+    path.write_text(json.dumps(items, ensure_ascii=False), encoding="utf-8")
+    ctx["settings"] = dataclasses.replace(ctx["settings"], spots_path=path)
+
+
+@then("생성기에 보낸 프롬프트의 물줄기는 달의 반대쪽 3분의 1 에 있다")
+def _stream_opposite_moon(ctx):
+    moon_side = _written(ctx)["sky_side"]
+    stream_side = next(side for side in config.SKY_SIDES if side != moon_side)
+    assert f"in the {stream_side} third of the frame" in ctx["generate"].calls[0][0][0]

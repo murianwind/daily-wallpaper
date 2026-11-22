@@ -2,6 +2,7 @@
 
 from datetime import date
 
+from .config import SKY_SIDES
 from .spot_selector import Spot
 
 STYLE = (
@@ -83,7 +84,10 @@ def season_of(day: date) -> str:
     return "winter"
 
 
-def build_prompt(spot: Spot, slot: str, season: str, condition: str) -> str:
+def build_prompt(spot: Spot, slot: str, season: str, condition: str, stream_side: str) -> str:
+    """`stream_side` is where a waterfall's stream is placed (left or right third of the frame)."""
+    if stream_side not in SKY_SIDES:
+        raise ValueError(f"unknown stream side: {stream_side!r}")
     time_phrase = _lookup(_TIME_PHRASES, slot, "slot")
     season_phrase = _lookup(_SEASON_PHRASES, season, "season")
     weather_phrase = _lookup(
@@ -92,7 +96,18 @@ def build_prompt(spot: Spot, slot: str, season: str, condition: str) -> str:
     return (
         f"{STYLE} Scene: {spot.visual}. Season: {season_phrase}. "
         f"Weather: {weather_phrase}. Time: {time_phrase}. "
-        f"{_SKY_PHRASES[slot]}"
+        f"{_SKY_PHRASES[slot]}{_composition_phrase(spot, stream_side)}"
+    )
+
+
+def _composition_phrase(spot: Spot, stream_side: str) -> str:
+    """Keeps a waterfall's stream off the image centre: it falls in the given third of the frame."""
+    if not spot.waterfall:
+        return ""
+    other_side = next(side for side in SKY_SIDES if side != stream_side)
+    return (
+        f" Composition: the waterfall's stream falls in the {stream_side} third of the frame, "
+        f"never in the center of the image, with open cliffs and sky on the {other_side} side."
     )
 
 

@@ -5,10 +5,12 @@ from pytest_bdd import given, parsers, scenarios, then, when
 
 from support import capture
 from wallpaper import prompt_builder, weather
-from wallpaper.config import SLOTS
+from wallpaper.config import SKY_SIDES, SLOTS
 from wallpaper.spot_selector import Spot
 
 scenarios("features/prompt.feature")
+
+DEFAULT_SIDE = SKY_SIDES[0]
 
 # Whole words only, so e.g. "layered" is not mistaken for "red".
 COLOR_NAMES = re.compile(
@@ -34,6 +36,17 @@ def _bakyeon():
         name_ko="박연폭포",
         area="개성",
         visual="a tall narrow waterfall plunging from a granite cliff into a deep pool",
+        waterfall=True,
+    )
+
+
+@given("비로봉 명승지", target_fixture="spot")
+def _birobong():
+    return Spot(
+        id="birobong",
+        name_ko="비로봉",
+        area="금강산",
+        visual="a steep bare granite peak with jagged ridges",
     )
 
 
@@ -52,12 +65,33 @@ def _season_is(season, expected):
     target_fixture="prompt",
 )
 def _build(spot, slot, season, condition):
-    return prompt_builder.build_prompt(spot, slot, season, condition)
+    return prompt_builder.build_prompt(spot, slot, season, condition, DEFAULT_SIDE)
+
+
+@when(
+    parsers.parse(
+        "{slot} 시간대, {season} 계절, {condition} 날씨, {side} 쪽 물줄기로 프롬프트를 만든다"
+    ),
+    target_fixture="prompt",
+)
+def _build_with_side(spot, slot, season, condition, side):
+    return prompt_builder.build_prompt(spot, slot, season, condition, side)
+
+
+@when(
+    parsers.parse(
+        "{slot} 시간대, {season} 계절, {condition} 날씨, {side} 쪽 물줄기로 프롬프트를 만들려 한다"
+    )
+)
+def _try_build_with_side(spot, ctx, slot, season, condition, side):
+    _, ctx["error"] = capture(prompt_builder.build_prompt, spot, slot, season, condition, side)
 
 
 @when(parsers.parse("{slot} 시간대, {season} 계절, {condition} 날씨로 프롬프트를 만들려 한다"))
 def _try_build(spot, ctx, slot, season, condition):
-    _, ctx["error"] = capture(prompt_builder.build_prompt, spot, slot, season, condition)
+    _, ctx["error"] = capture(
+        prompt_builder.build_prompt, spot, slot, season, condition, DEFAULT_SIDE
+    )
 
 
 @then(parsers.parse('프롬프트에 "{text}" 가 들어 있다'))
@@ -75,16 +109,17 @@ def _all_combinations(spot):
     for slot in SLOTS:
         for season in _all_seasons():
             for condition in _all_conditions():
-                assert prompt_builder.build_prompt(spot, slot, season, condition)
+                assert prompt_builder.build_prompt(spot, slot, season, condition, DEFAULT_SIDE)
 
 
 def _every_prompt(spots):
     return [
-        prompt_builder.build_prompt(spot, slot, season, condition)
+        prompt_builder.build_prompt(spot, slot, season, condition, side)
         for spot in spots
         for slot in SLOTS
         for season in _all_seasons()
         for condition in _all_conditions()
+        for side in SKY_SIDES
     ]
 
 

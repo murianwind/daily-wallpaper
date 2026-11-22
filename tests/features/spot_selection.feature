@@ -57,3 +57,23 @@ Feature: 명승지 선택
     Given id가 중복된 명승지 파일
     When 그 파일을 불러오려 한다
     Then 데이터 오류가 발생하고 메시지에 "duplicate"가 들어 있다
+
+  Scenario: 폭포가 주제인 명승지는 waterfall 표시가 되어 있다
+    Given 실제 명승지 데이터 파일
+    Then waterfall 표시가 있는 명승지는 정해 둔 6곳이다
+
+  Scenario: waterfall 항목이 없는 명승지는 폭포가 아닌 것으로 본다
+    Given waterfall 항목이 없는 명승지 파일
+    When 그 파일을 불러온다
+    Then 불러온 명승지는 폭포가 아니다
+
+  Scenario: waterfall 항목이 true 인 명승지는 폭포로 읽는다
+    Given waterfall 항목이 true 인 명승지 파일
+    When 그 파일을 불러온다
+    Then 불러온 명승지는 폭포이다
+
+  Scenario: waterfall 항목이 true/false 가 아니면 거부된다
+    Given waterfall 항목이 문자열인 명승지 파일
+    When 그 파일을 불러오려 한다
+    Then 데이터 오류가 발생하고 메시지에 "waterfall"이 들어 있다
+

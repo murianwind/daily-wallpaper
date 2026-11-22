@@ -43,6 +43,36 @@ def _duplicate_id(tmp_path):
     return _write(tmp_path, [item, dict(item)])
 
 
+WATERFALL_SPOT_IDS = {
+    "bakyeon-falls",
+    "sambuyeon",
+    "guryongyeon",
+    "sibi-falls",
+    "samyongchu",
+    "jeongbang-falls",
+}
+
+
+def _waterfall_file(tmp_path, **extra):
+    item = {"id": "a", "name_ko": "가", "area": "x", "visual": "v", **extra}
+    return _write(tmp_path, [item])
+
+
+@given("waterfall 항목이 없는 명승지 파일", target_fixture="bad_file")
+def _no_waterfall_field(tmp_path):
+    return _waterfall_file(tmp_path)
+
+
+@given("waterfall 항목이 true 인 명승지 파일", target_fixture="bad_file")
+def _waterfall_true(tmp_path):
+    return _waterfall_file(tmp_path, waterfall=True)
+
+
+@given("waterfall 항목이 문자열인 명승지 파일", target_fixture="bad_file")
+def _waterfall_string(tmp_path):
+    return _waterfall_file(tmp_path, waterfall="yes")
+
+
 @given("최근 기록이 비어 있다", target_fixture="recent")
 def _no_recent():
     return []
@@ -85,6 +115,26 @@ def _try_pick(spots, recent, ctx):
 @when("그 파일을 불러오려 한다")
 def _try_load(bad_file, ctx):
     _, ctx["error"] = capture(spot_selector.load_spots, bad_file)
+
+
+@when("그 파일을 불러온다", target_fixture="loaded")
+def _load(bad_file):
+    return spot_selector.load_spots(bad_file)
+
+
+@then("불러온 명승지는 폭포가 아니다")
+def _not_waterfall(loaded):
+    assert loaded[0].waterfall is False
+
+
+@then("불러온 명승지는 폭포이다")
+def _is_waterfall(loaded):
+    assert loaded[0].waterfall is True
+
+
+@then("waterfall 표시가 있는 명승지는 정해 둔 6곳이다")
+def _curated_waterfalls(spots):
+    assert {spot.id for spot in spots if spot.waterfall} == WATERFALL_SPOT_IDS
 
 
 @then("명승지가 2곳 이상 있다")

@@ -85,3 +85,8 @@ def _unchanged(canvas, painted):
 @then("달 입력 오류가 발생한다")
 def _error(ctx):
     assert isinstance(ctx["error"], ValueError)
+
+
+@then("달 중심은 화면 높이의 38% 보다 위에 있다")
+def _moon_is_high(canvas, ctx):
+    assert _center(canvas, ctx["side"])[1] < canvas.height * 0.38

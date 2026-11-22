@@ -19,6 +19,7 @@ class Spot:
     name_ko: str
     area: str
     visual: str
+    waterfall: bool = False  # the falling water is the main subject (kept off the image centre)
 
 
 def load_spots(path: Path) -> list[Spot]:
@@ -32,7 +33,12 @@ def load_spots(path: Path) -> list[Spot]:
         if item["id"] in seen_ids:
             raise SpotDataError(f"duplicate spot id: {item['id']}")
         seen_ids.add(item["id"])
-        spots.append(Spot(**{field: item[field] for field in _REQUIRED_FIELDS}))
+        waterfall = item.get("waterfall", False)
+        if not isinstance(waterfall, bool):
+            raise SpotDataError(f"spot #{index}: waterfall must be true or false")
+        spots.append(
+            Spot(**{field: item[field] for field in _REQUIRED_FIELDS}, waterfall=waterfall)
+        )
     return spots
 
 

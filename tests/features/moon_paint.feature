@@ -45,3 +45,9 @@ Feature: 달 그리기
     Given 어두운 단색 캔버스
     When center 쪽에 full 달을 그리려 한다
     Then 달 입력 오류가 발생한다
+
+  Scenario: 달은 화면 위쪽 38% 지점보다 위에 놓인다
+    Given 어두운 단색 캔버스
+    When right 쪽에 full 달을 그린다
+    Then 달 중심은 화면 높이의 38% 보다 위에 있다
+
