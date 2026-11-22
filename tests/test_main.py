@@ -340,24 +340,46 @@ def _notified(ctx):
     assert _spot_in_prompt(ctx).name_ko in args[1]
 
 
-def _side_in_prompt(prompt):
-    sides = [side for side in config.SKY_SIDES if f"in the {side} part of the sky" in prompt]
-    assert len(sides) == 1
-    return sides[0]
-
-
-@then("latest.json 의 해달 위치는 프롬프트에 쓴 쪽과 같다")
-def _side_recorded(ctx):
-    prompt = ctx["generate"].calls[0][0][0]
-    assert _written(ctx)["sky_side"] == _side_in_prompt(prompt)
-
-
-@then("프롬프트에 해달 위치가 왼쪽인 경우와 오른쪽인 경우가 모두 나왔다")
-def _both_sides_used(ctx):
-    sides = {_side_in_prompt(call[0][0]) for call in ctx["generate"].calls}
-    assert sides == set(config.SKY_SIDES)
-
-
 @then(parsers.parse('latest.json 의 달 모양은 "{phase}" 이다'))
 def _moon_recorded(ctx, phase):
     assert _written(ctx)["moon_phase"] == phase
+
+
+@then("latest.json 의 해달 위치는 왼쪽이거나 오른쪽이다")
+def _side_recorded(ctx):
+    assert _written(ctx)["sky_side"] in config.SKY_SIDES
+
+
+@when(parsers.parse("{slot} 시간대로 {day} 에 {times:d}번 연달아 실행하며 달 위치를 모은다"))
+def _run_collecting_sides(ctx, slot, day, times):
+    ctx["sides"] = set()
+    for _ in range(times):
+        assert _run(ctx, slot, day) == 0
+        ctx["sides"].add(_written(ctx)["sky_side"])
+
+
+@then("모은 달 위치에 왼쪽과 오른쪽이 모두 있다")
+def _both_sides(ctx):
+    assert ctx["sides"] == set(config.SKY_SIDES)
+
+
+def _moon_spot_level(ctx):
+    side = _written(ctx)["sky_side"]
+    with Image.open(ctx["settings"].out_dir / "latest.jpg") as image:
+        gray = image.convert("L")
+        return gray.getpixel(
+            (
+                round(gray.width * config.MOON_CENTER_X_RATIOS[side]),
+                round(gray.height * config.MOON_CENTER_Y_RATIO),
+            )
+        )
+
+
+@then("latest.jpg 의 달 자리는 밝다")
+def _moon_drawn(ctx):
+    assert _moon_spot_level(ctx) > 200
+
+
+@then("latest.jpg 의 달 자리는 밝지 않다")
+def _moon_not_drawn(ctx):
+    assert _moon_spot_level(ctx) < 150

@@ -2,8 +2,6 @@
 
 from datetime import date
 
-from .config import SKY_SIDES
-from .moon_phase import PHASES
 from .spot_selector import Spot
 
 STYLE = (
@@ -32,39 +30,33 @@ _TIME_PHRASES = {
     "night": "night scene, deep black ink wash, very dark low-key tones",
 }
 
-# How the moon looks in each phase (northern hemisphere: the waxing moon is lit on its right).
-# "new" is absent on purpose: a new moon is not drawn at all.
-_MOON_SHAPES = {
-    "waxing_crescent": "a thin waxing crescent, lit on its right edge",
-    "first_quarter": "a half moon, the right half lit",
-    "waxing_gibbous": "a waxing gibbous moon, mostly lit, the lit part on the right",
-    "full": "a full round moon",
-    "waning_gibbous": "a waning gibbous moon, mostly lit, the lit part on the left",
-    "last_quarter": "a half moon, the left half lit",
-    "waning_crescent": "a thin waning crescent, lit on its left edge",
+# The sun and moon are never drawn by the model: the moon is painted afterwards in its real phase.
+_SKY_PHRASES = {
+    "day": "Sky: plain empty sky, no sun and no moon are drawn.",
+    "night": "Sky: plain dark empty sky, no sun and no moon are drawn.",
 }
 
 # Keyed by weather condition (every value weather.classify can return), then by slot.
 _WEATHER_PHRASES = {
     "clear": {
         "day": "clear sky, crisp light on the rocks",
-        "night": "clear night sky, a bright moon, a few faint stars",
+        "night": "clear night sky, a few faint stars",
     },
     "partly_cloudy": {
         "day": "scattered clouds drifting among the peaks",
-        "night": "moon half-veiled by drifting clouds",
+        "night": "thin clouds drifting across the night sky",
     },
     "overcast": {
         "day": "heavy grey clouds, soft diffused light",
-        "night": "thick clouds hiding the moon, very dark",
+        "night": "thick clouds covering the night sky, very dark",
     },
     "fog": {
         "day": "thick mist filling the valleys, peaks half hidden",
-        "night": "dense moonlit mist, peaks barely visible",
+        "night": "dense night mist, peaks barely visible",
     },
     "rain": {
         "day": "falling rain, wet dark rocks, low clouds on the peaks",
-        "night": "rainy night, dark wet rocks, moon hidden",
+        "night": "rainy night, dark wet rocks, low clouds",
     },
     "snow": {
         "day": "snow falling softly, pale snow dusting dark rocks and pines",
@@ -91,13 +83,7 @@ def season_of(day: date) -> str:
     return "winter"
 
 
-def build_prompt(
-    spot: Spot, slot: str, season: str, condition: str, sky_side: str, moon_phase: str
-) -> str:
-    if sky_side not in SKY_SIDES:
-        raise ValueError(f"unknown sky side: {sky_side!r}")
-    if moon_phase not in PHASES:
-        raise ValueError(f"unknown moon phase: {moon_phase!r}")
+def build_prompt(spot: Spot, slot: str, season: str, condition: str) -> str:
     time_phrase = _lookup(_TIME_PHRASES, slot, "slot")
     season_phrase = _lookup(_SEASON_PHRASES, season, "season")
     weather_phrase = _lookup(
@@ -106,18 +92,7 @@ def build_prompt(
     return (
         f"{STYLE} Scene: {spot.visual}. Season: {season_phrase}. "
         f"Weather: {weather_phrase}. Time: {time_phrase}. "
-        f"{_sky_phrase(slot, sky_side, moon_phase)}"
-    )
-
-
-def _sky_phrase(slot: str, sky_side: str, moon_phase: str) -> str:
-    if slot == "day":
-        return "Sky: plain empty sky, no sun and no moon are drawn."
-    if moon_phase == "new":
-        return "Sky: it is a new moon night, so no moon is drawn."
-    return (
-        f"Sky: the moon is {_MOON_SHAPES[moon_phase]}, small, set in the {sky_side} part of the "
-        "sky, never at the center; if clouds or rain hide it, draw no moon."
+        f"{_SKY_PHRASES[slot]}"
     )
 
 

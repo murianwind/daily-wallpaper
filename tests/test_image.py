@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageStat
 from pytest_bdd import given, parsers, scenarios, then, when
 
 from support import capture, png_bytes
-from wallpaper import config, image_post
+from wallpaper import config, image_post, moon_painter
 
 scenarios("features/image.feature")
 
@@ -166,6 +166,26 @@ def _seam_is_soft(ctx):
 @then("결과의 경계에서 충분히 내려간 왼쪽 픽셀은 검다")
 def _picture_resumes(ctx):
     assert _gray(ctx, 0.25, config.TOP_BLANK_RATIO + config.TOP_FADE_RATIO + 0.03) < 40
+
+
+@when(parsers.parse("{width:d}x{height:d} 크기로 {side} 쪽 {phase} 달과 함께 변환한다"))
+def _convert_with_moon(raw, ctx, width, height, side, phase):
+    moon = moon_painter.Moon(phase=phase, side=side)
+    ctx["result"], ctx["error"] = capture(image_post.to_wallpaper, raw, width, height, moon)
+
+
+def _moon_spot(ctx, side="right"):
+    return _gray(ctx, config.MOON_CENTER_X_RATIOS[side], config.MOON_CENTER_Y_RATIO)
+
+
+@then("결과의 달 자리는 밝다")
+def _moon_spot_bright(ctx):
+    assert _moon_spot(ctx) > 200
+
+
+@then("결과의 달 자리는 밝지 않다")
+def _moon_spot_not_bright(ctx):
+    assert _moon_spot(ctx) < 150
 
 
 @then("결과 전체의 평균 밝기는 상한 이하이다")

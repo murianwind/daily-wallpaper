@@ -2,7 +2,7 @@
 
 The picture is trimmed, fitted into the lower part of the screen, darkened if it is too bright (so
 iOS shows white text on it) and the top third is left as a plain blank background that the picture
-fades into.
+fades into. The moon, if any, is painted last so the darkening does not dim it.
 """
 
 import io
@@ -10,6 +10,7 @@ import io
 from PIL import Image, ImageStat, UnidentifiedImageError
 
 from .config import EDGE_TRIM_RATIO, MAX_MEAN_BRIGHTNESS, TOP_BLANK_RATIO, TOP_FADE_RATIO
+from .moon_painter import Moon, paint_moon
 
 JPEG_QUALITY = 92
 _OPAQUE = 255
@@ -22,7 +23,7 @@ class ImageProcessingError(RuntimeError):
     """The generated data could not be read as an image."""
 
 
-def to_wallpaper(raw: bytes, width: int, height: int) -> bytes:
+def to_wallpaper(raw: bytes, width: int, height: int, moon: Moon | None = None) -> bytes:
     try:
         with Image.open(io.BytesIO(raw)) as source:
             image = source.convert("L")
@@ -33,6 +34,8 @@ def to_wallpaper(raw: bytes, width: int, height: int) -> bytes:
     picture = _darken(_cover_fit(_trim_edges(image), width, height - blank_height))
     canvas = _blank_canvas(picture, width, height, round(height * TOP_FADE_RATIO))
     canvas.paste(picture, (0, blank_height), _fade_mask(picture, round(height * TOP_FADE_RATIO)))
+    if moon is not None:
+        paint_moon(canvas, moon)
 
     # Saved as 3-channel JPEG (neutral chroma costs almost nothing) for maximum iOS compatibility.
     output = io.BytesIO()

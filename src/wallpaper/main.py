@@ -25,6 +25,7 @@ from .config import (
     GEN_HEIGHT,
     GEN_WIDTH,
     KST,
+    MOON_VISIBLE_CONDITIONS,
     SEOUL_LATITUDE,
     SEOUL_LONGITUDE,
     SKY_SIDES,
@@ -32,6 +33,7 @@ from .config import (
     WALLPAPER_HEIGHT,
     WALLPAPER_WIDTH,
 )
+from .moon_painter import Moon
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +103,7 @@ def run(
     moon = moon_phase.phase_of(now)
     condition = fetch_condition(SEOUL_LATITUDE, SEOUL_LONGITUDE)
     season = prompt_builder.season_of(today)
-    prompt = prompt_builder.build_prompt(spot, slot, season, condition, sky_side, moon)
+    prompt = prompt_builder.build_prompt(spot, slot, season, condition)
     logger.info("slot=%s spot=%s weather=%s season=%s", slot, spot.id, condition, season)
 
     try:
@@ -114,7 +116,9 @@ def run(
             height=GEN_HEIGHT,
             seed=seed,
         )
-        jpeg = image_post.to_wallpaper(raw, WALLPAPER_WIDTH, WALLPAPER_HEIGHT)
+        jpeg = image_post.to_wallpaper(
+            raw, WALLPAPER_WIDTH, WALLPAPER_HEIGHT, _visible_moon(slot, condition, moon, sky_side)
+        )
     except (cf_client.GenerationError, image_post.ImageProcessingError) as exc:
         logger.error("wallpaper generation failed: %s", exc)
         notify(
@@ -143,6 +147,13 @@ def run(
         },
     )
     return 0
+
+
+def _visible_moon(slot: str, condition: str, phase: str, side: str) -> Moon | None:
+    """The moon to paint: only at night, in weather that lets it be seen."""
+    if slot != "night" or condition not in MOON_VISIBLE_CONDITIONS:
+        return None
+    return Moon(phase=phase, side=side)
 
 
 def main(argv=None, env=None, now: datetime | None = None) -> int:

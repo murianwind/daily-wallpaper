@@ -24,6 +24,14 @@ TOP_BLANK_RATIO = 1 / 3
 TOP_FADE_RATIO = 0.05
 # iOS picks white text on dark wallpapers, so the picture's mean brightness (0-255) is capped here.
 MAX_MEAN_BRIGHTNESS = 90
+# The moon is painted by us (image models draw moon phases unreliably): just below the blank top
+# area, on the left or right, never at the centre. Sizes and positions are fractions of the screen.
+MOON_RADIUS_RATIO = 0.045
+MOON_CENTER_Y_RATIO = 0.41
+MOON_CENTER_X_RATIOS = {"left": 0.25, "right": 0.75}
+MOON_LEVEL = 235
+# Weather in which the night moon can be seen (anything else hides it behind clouds, rain or fog).
+MOON_VISIBLE_CONDITIONS = ("clear", "partly_cloudy", "unknown")
 # iPhone 15 Pro screen size in pixels.
 WALLPAPER_WIDTH = 1179
 WALLPAPER_HEIGHT = 2556
