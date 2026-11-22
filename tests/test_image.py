@@ -1,6 +1,6 @@
 import io
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageStat
 from pytest_bdd import given, parsers, scenarios, then, when
 
 from support import capture, png_bytes
@@ -8,7 +8,9 @@ from wallpaper import config, image_post
 
 scenarios("features/image.feature")
 
-BROWN = (120, 90, 60)
+BROWN = (70, 50, 30)
+GREEN = (0, 80, 0)
+DARK_GRAY = 40
 
 
 @given(parsers.parse("{width:d}x{height:d} PNG 이미지"), target_fixture="raw")
@@ -19,7 +21,7 @@ def _plain(width, height):
 @given("가로 3등분(빨강, 초록, 파랑)된 1200x400 PNG 이미지", target_fixture="raw")
 def _three_bands():
     image = Image.new("RGB", (1200, 400))
-    for index, color in enumerate([(255, 0, 0), (0, 255, 0), (0, 0, 255)]):
+    for index, color in enumerate([(90, 0, 0), GREEN, (0, 0, 90)]):
         image.paste(color, (index * 400, 0, (index + 1) * 400, 400))
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
@@ -53,6 +55,25 @@ def _framed():
 def _half_black_half_white():
     image = Image.new("L", (1104, 1600), 255)
     image.paste(0, (0, 0, 552, 1600))
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+@given("밝은 회색 단색 1104x1600 PNG 이미지", target_fixture="raw")
+def _bright_gray():
+    return png_bytes(1104, 1600, color=190, mode="L")
+
+
+@given("어두운 회색 단색 1104x1600 PNG 이미지", target_fixture="raw")
+def _dark_gray():
+    return png_bytes(1104, 1600, color=DARK_GRAY, mode="L")
+
+
+@given("밝은 배경 한가운데 흰 달이 있는 1104x1600 PNG 이미지", target_fixture="raw")
+def _moon_on_bright_sky():
+    image = Image.new("L", (1104, 1600), 200)
+    ImageDraw.Draw(image).ellipse((492, 740, 612, 860), fill=255)
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
     return buffer.getvalue()
@@ -99,7 +120,7 @@ def _assert_gray_level(pixel, expected):
 
 @then("결과의 가운데 픽셀은 초록색의 밝기이다")
 def _center_is_green_level(ctx):
-    _assert_gray_level(_pixel(ctx, 0.5, 0.5), _luma(0, 255, 0))
+    _assert_gray_level(_pixel(ctx, 0.5, 0.5), _luma(*GREEN))
 
 
 @then("결과의 가운데 픽셀은 갈색의 밝기이다")
@@ -145,6 +166,24 @@ def _seam_is_soft(ctx):
 @then("결과의 경계에서 충분히 내려간 왼쪽 픽셀은 검다")
 def _picture_resumes(ctx):
     assert _gray(ctx, 0.25, config.TOP_BLANK_RATIO + config.TOP_FADE_RATIO + 0.03) < 40
+
+
+@then("결과 전체의 평균 밝기는 상한 이하이다")
+def _mean_below_ceiling(ctx):
+    with Image.open(io.BytesIO(ctx["result"])) as image:
+        assert ImageStat.Stat(image.convert("L")).mean[0] <= config.MAX_MEAN_BRIGHTNESS + 2
+
+
+@then("결과의 가운데 픽셀은 어두운 회색의 밝기이다")
+def _center_is_dark_gray(ctx):
+    _assert_gray_level(_pixel(ctx, 0.5, 0.5), DARK_GRAY)
+
+
+@then("결과의 달 자리 픽셀은 밝고 배경 픽셀은 어둡다")
+def _moon_stays_bright(ctx):
+    moon_y = config.TOP_BLANK_RATIO + (1 - config.TOP_BLANK_RATIO) / 2
+    assert _gray(ctx, 0.5, moon_y) > 235
+    assert _gray(ctx, 0.2, 0.8) < config.MAX_MEAN_BRIGHTNESS + 25
 
 
 @then("결과의 모든 표본 픽셀은 회색이다")

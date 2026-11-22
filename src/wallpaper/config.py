@@ -22,6 +22,8 @@ EDGE_TRIM_RATIO = 0.07
 TOP_BLANK_RATIO = 1 / 3
 # Fraction of the screen height over which the picture fades into that blank background.
 TOP_FADE_RATIO = 0.05
+# iOS picks white text on dark wallpapers, so the picture's mean brightness (0-255) is capped here.
+MAX_MEAN_BRIGHTNESS = 90
 # iPhone 15 Pro screen size in pixels.
 WALLPAPER_WIDTH = 1179
 WALLPAPER_HEIGHT = 2556

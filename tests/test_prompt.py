@@ -4,11 +4,13 @@ from datetime import date
 from pytest_bdd import given, parsers, scenarios, then, when
 
 from support import capture
-from wallpaper import prompt_builder, weather
+from wallpaper import moon_phase, prompt_builder, weather
 from wallpaper.config import SKY_SIDES, SLOTS
 from wallpaper.spot_selector import Spot
 
 scenarios("features/prompt.feature")
+
+DEFAULT_MOON = "full"
 
 # Whole words only, so e.g. "layered" is not mistaken for "red".
 COLOR_NAMES = re.compile(
@@ -54,7 +56,17 @@ def _season_is(season, expected):
     target_fixture="prompt",
 )
 def _build(spot, slot, season, condition, side):
-    return prompt_builder.build_prompt(spot, slot, season, condition, side)
+    return prompt_builder.build_prompt(spot, slot, season, condition, side, DEFAULT_MOON)
+
+
+@when(
+    parsers.parse(
+        "{slot} 시간대, {season} 계절, {condition} 날씨, {side} 쪽, {moon} 달로 프롬프트를 만든다"
+    ),
+    target_fixture="prompt",
+)
+def _build_with_moon(spot, slot, season, condition, side, moon):
+    return prompt_builder.build_prompt(spot, slot, season, condition, side, moon)
 
 
 @when(
@@ -63,7 +75,21 @@ def _build(spot, slot, season, condition, side):
     )
 )
 def _try_build(spot, ctx, slot, season, condition, side):
-    _, ctx["error"] = capture(prompt_builder.build_prompt, spot, slot, season, condition, side)
+    _, ctx["error"] = capture(
+        prompt_builder.build_prompt, spot, slot, season, condition, side, DEFAULT_MOON
+    )
+
+
+@when(
+    parsers.parse(
+        "{slot} 시간대, {season} 계절, {condition} 날씨, "
+        "{side} 쪽, {moon} 달로 프롬프트를 만들려 한다"
+    )
+)
+def _try_build_with_moon(spot, ctx, slot, season, condition, side, moon):
+    _, ctx["error"] = capture(
+        prompt_builder.build_prompt, spot, slot, season, condition, side, moon
+    )
 
 
 @then(parsers.parse('프롬프트에 "{text}" 가 들어 있다'))
@@ -82,17 +108,21 @@ def _all_combinations(spot):
         for season in _all_seasons():
             for condition in _all_conditions():
                 for side in SKY_SIDES:
-                    assert prompt_builder.build_prompt(spot, slot, season, condition, side)
+                    for moon in moon_phase.PHASES:
+                        assert prompt_builder.build_prompt(
+                            spot, slot, season, condition, side, moon
+                        )
 
 
 def _every_prompt(spots):
     return [
-        prompt_builder.build_prompt(spot, slot, season, condition, side)
+        prompt_builder.build_prompt(spot, slot, season, condition, side, moon)
         for spot in spots
         for slot in SLOTS
         for season in _all_seasons()
         for condition in _all_conditions()
         for side in SKY_SIDES
+        for moon in moon_phase.PHASES
     ]
 
 

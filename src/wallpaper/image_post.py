@@ -1,17 +1,21 @@
 """Turn the raw generated image into an iPhone-sized grayscale JPEG.
 
-The picture is trimmed, fitted into the lower part of the screen and the top third is left as a
-plain blank background that the picture fades into.
+The picture is trimmed, fitted into the lower part of the screen, darkened if it is too bright (so
+iOS shows white text on it) and the top third is left as a plain blank background that the picture
+fades into.
 """
 
 import io
 
 from PIL import Image, ImageStat, UnidentifiedImageError
 
-from .config import EDGE_TRIM_RATIO, TOP_BLANK_RATIO, TOP_FADE_RATIO
+from .config import EDGE_TRIM_RATIO, MAX_MEAN_BRIGHTNESS, TOP_BLANK_RATIO, TOP_FADE_RATIO
 
 JPEG_QUALITY = 92
 _OPAQUE = 255
+# Caps the darkening so a near-white picture is not crushed to solid black.
+_MAX_GAMMA = 6.0
+_GAMMA_SEARCH_STEPS = 20
 
 
 class ImageProcessingError(RuntimeError):
@@ -26,7 +30,7 @@ def to_wallpaper(raw: bytes, width: int, height: int) -> bytes:
         raise ImageProcessingError("generated data is not a valid image") from exc
 
     blank_height = round(height * TOP_BLANK_RATIO)
-    picture = _cover_fit(_trim_edges(image), width, height - blank_height)
+    picture = _darken(_cover_fit(_trim_edges(image), width, height - blank_height))
     canvas = _blank_canvas(picture, width, height, round(height * TOP_FADE_RATIO))
     canvas.paste(picture, (0, blank_height), _fade_mask(picture, round(height * TOP_FADE_RATIO)))
 
@@ -50,6 +54,33 @@ def _cover_fit(image: Image.Image, width: int, height: int) -> Image.Image:
     left = (resized.width - width) // 2
     top = (resized.height - height) // 2
     return resized.crop((left, top, left + width, top + height))
+
+
+def _darken(image: Image.Image) -> Image.Image:
+    """Apply the weakest gamma that brings the mean brightness down to the ceiling.
+
+    A gamma curve keeps pure white white, so a bright moon survives the darkening.
+    """
+    histogram = image.histogram()
+    pixels = sum(histogram)
+
+    def mean_with(gamma: float) -> float:
+        return (
+            sum(count * _gamma_level(level, gamma) for level, count in enumerate(histogram))
+            / pixels
+        )
+
+    if mean_with(1.0) <= MAX_MEAN_BRIGHTNESS:
+        return image
+    low, high = 1.0, _MAX_GAMMA
+    for _ in range(_GAMMA_SEARCH_STEPS):
+        middle = (low + high) / 2
+        low, high = (middle, high) if mean_with(middle) > MAX_MEAN_BRIGHTNESS else (low, middle)
+    return image.point([round(_gamma_level(level, high)) for level in range(256)])
+
+
+def _gamma_level(level: int, gamma: float) -> float:
+    return _OPAQUE * (level / _OPAQUE) ** gamma
 
 
 def _blank_canvas(picture: Image.Image, width: int, height: int, band: int) -> Image.Image:

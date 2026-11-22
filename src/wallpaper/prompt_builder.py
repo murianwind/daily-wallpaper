@@ -3,13 +3,16 @@
 from datetime import date
 
 from .config import SKY_SIDES
+from .moon_phase import PHASES
 from .spot_selector import Spot
 
 STYLE = (
     "Korean Joseon-era true-view landscape ink painting (jingyeong sansuhwa) in the manner of "
     "Jeong Seon, strictly monochrome black ink wash in shades of grey, no color, "
     "bold dry-brush strokes, dense vertical texture strokes on granite cliffs, "
-    "layered ink wash, aged hanji paper texture in neutral grey, vertical "
+    "layered ink wash, aged hanji paper texture in dark charcoal grey, "
+    "overall dark low-key tonality, mostly deep charcoal and black with only small light accents, "
+    "vertical "
     "hanging-scroll composition, distant panoramic view seen from far away, "
     "a wide vista where the whole landscape appears small in a vast open space, "
     "calm empty sky above the mountains, "
@@ -25,14 +28,26 @@ _SEASON_PHRASES = {
 }
 
 _TIME_PHRASES = {
-    "day": "bright daytime, luminous pale grey washes, light paper tone, high-key",
-    "night": ("night scene, deep black ink wash, dark low-key tones, a faint pale moon glow"),
+    "day": "daytime with soft light, dark charcoal ink washes, heavy low-key tones, rich black ink",
+    "night": "night scene, deep black ink wash, very dark low-key tones",
+}
+
+# How the moon looks in each phase (northern hemisphere: the waxing moon is lit on its right).
+# "new" is absent on purpose: a new moon is not drawn at all.
+_MOON_SHAPES = {
+    "waxing_crescent": "a thin waxing crescent, lit on its right edge",
+    "first_quarter": "a half moon, the right half lit",
+    "waxing_gibbous": "a waxing gibbous moon, mostly lit, the lit part on the right",
+    "full": "a full round moon",
+    "waning_gibbous": "a waning gibbous moon, mostly lit, the lit part on the left",
+    "last_quarter": "a half moon, the left half lit",
+    "waning_crescent": "a thin waning crescent, lit on its left edge",
 }
 
 # Keyed by weather condition (every value weather.classify can return), then by slot.
 _WEATHER_PHRASES = {
     "clear": {
-        "day": "clear sky, crisp sunlight on the rocks",
+        "day": "clear sky, crisp light on the rocks",
         "night": "clear night sky, a bright moon, a few faint stars",
     },
     "partly_cloudy": {
@@ -52,7 +67,7 @@ _WEATHER_PHRASES = {
         "night": "rainy night, dark wet rocks, moon hidden",
     },
     "snow": {
-        "day": "snow falling softly, white rocks and pines",
+        "day": "snow falling softly, pale snow dusting dark rocks and pines",
         "night": "snowfall at night, pale snow glowing in the dark",
     },
     "thunderstorm": {
@@ -76,9 +91,13 @@ def season_of(day: date) -> str:
     return "winter"
 
 
-def build_prompt(spot: Spot, slot: str, season: str, condition: str, sky_side: str) -> str:
+def build_prompt(
+    spot: Spot, slot: str, season: str, condition: str, sky_side: str, moon_phase: str
+) -> str:
     if sky_side not in SKY_SIDES:
         raise ValueError(f"unknown sky side: {sky_side!r}")
+    if moon_phase not in PHASES:
+        raise ValueError(f"unknown moon phase: {moon_phase!r}")
     time_phrase = _lookup(_TIME_PHRASES, slot, "slot")
     season_phrase = _lookup(_SEASON_PHRASES, season, "season")
     weather_phrase = _lookup(
@@ -87,8 +106,18 @@ def build_prompt(spot: Spot, slot: str, season: str, condition: str, sky_side: s
     return (
         f"{STYLE} Scene: {spot.visual}. Season: {season_phrase}. "
         f"Weather: {weather_phrase}. Time: {time_phrase}. "
-        f"Sky: any sun or moon is small and set in the {sky_side} part of the sky, "
-        "never at the center."
+        f"{_sky_phrase(slot, sky_side, moon_phase)}"
+    )
+
+
+def _sky_phrase(slot: str, sky_side: str, moon_phase: str) -> str:
+    if slot == "day":
+        return "Sky: plain empty sky, no sun and no moon are drawn."
+    if moon_phase == "new":
+        return "Sky: it is a new moon night, so no moon is drawn."
+    return (
+        f"Sky: the moon is {_MOON_SHAPES[moon_phase]}, small, set in the {sky_side} part of the "
+        "sky, never at the center; if clouds or rain hide it, draw no moon."
     )
 
 

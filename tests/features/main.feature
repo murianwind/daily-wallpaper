@@ -82,15 +82,22 @@ Feature: 배경화면 생성 실행
     When day 시간대로 2026-11-19 에 2번 연달아 실행한다
     Then 두 번의 생성 시드가 서로 다르고 latest.json 에 마지막 시드가 기록된다
 
-  Scenario: 해와 달의 위치는 프롬프트와 latest.json 에 같은 쪽으로 기록된다
+  Scenario: 밤에는 오늘의 달 모양과 위치가 프롬프트와 latest.json 에 같게 기록된다
     Given 정상 설정과 정상 동작하는 생성기
-    When day 시간대로 2026-11-19 에 실행한다
-    Then latest.json 의 해달 위치는 프롬프트에 쓴 쪽과 같다
+    When night 시간대로 2026-11-20 에 실행한다
+    Then 생성기에 보낸 프롬프트에 "waxing gibbous" 가 들어 있다
+    And latest.json 의 달 모양은 "waxing_gibbous" 이다
+    And latest.json 의 해달 위치는 프롬프트에 쓴 쪽과 같다
 
-  Scenario: 실행마다 해와 달의 위치가 왼쪽과 오른쪽으로 무작위로 정해진다
+  Scenario: 실행마다 달의 위치가 왼쪽과 오른쪽으로 무작위로 정해진다
     Given 정상 설정과 정상 동작하는 생성기
-    When day 시간대로 2026-11-19 에 20번 연달아 실행한다
+    When night 시간대로 2026-11-20 에 20번 연달아 실행한다
     Then 프롬프트에 해달 위치가 왼쪽인 경우와 오른쪽인 경우가 모두 나왔다
+
+  Scenario: 낮에는 해도 달도 그리지 않도록 프롬프트를 보낸다
+    Given 정상 설정과 정상 동작하는 생성기
+    When day 시간대로 2026-11-20 에 실행한다
+    Then 생성기에 보낸 프롬프트에 "no sun and no moon" 가 들어 있다
 
   Scenario: 생성이 실패하면 기존 이미지를 유지하고 알린 뒤 1 을 돌려준다
     Given 정상 설정과 항상 실패하는 생성기

@@ -10,7 +10,16 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from . import cf_client, history, image_post, notifier, prompt_builder, spot_selector, weather
+from . import (
+    cf_client,
+    history,
+    image_post,
+    moon_phase,
+    notifier,
+    prompt_builder,
+    spot_selector,
+    weather,
+)
 from .config import (
     DEFAULT_MODEL,
     GEN_HEIGHT,
@@ -89,9 +98,10 @@ def run(
     spot = spot_selector.choose_spot(spots, recent, rng)
     seed = rng.randrange(_SEED_LIMIT)
     sky_side = rng.choice(SKY_SIDES)
+    moon = moon_phase.phase_of(now)
     condition = fetch_condition(SEOUL_LATITUDE, SEOUL_LONGITUDE)
     season = prompt_builder.season_of(today)
-    prompt = prompt_builder.build_prompt(spot, slot, season, condition, sky_side)
+    prompt = prompt_builder.build_prompt(spot, slot, season, condition, sky_side, moon)
     logger.info("slot=%s spot=%s weather=%s season=%s", slot, spot.id, condition, season)
 
     try:
@@ -125,6 +135,7 @@ def run(
             "model": settings.model,
             "seed": seed,
             "sky_side": sky_side,
+            "moon_phase": moon,
             "generated_at": now.isoformat(),
             history.HISTORY_KEY: history.record(
                 recent, spot.id, spot_selector.history_window(spots)

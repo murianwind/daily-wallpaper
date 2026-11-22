@@ -69,17 +69,60 @@ Feature: 프롬프트 조립
     When day 시간대, autumn 계절, clear 날씨, left 쪽으로 프롬프트를 만든다
     Then 프롬프트에 "waterfall plunging" 가 들어 있다
 
-  Scenario: 낮 프롬프트는 밝은 톤을 요구한다
+  Scenario: 낮 프롬프트는 어두운 먹색 톤을 요구한다
     Given 박연폭포 명승지
     When day 시간대, autumn 계절, clear 날씨, left 쪽으로 프롬프트를 만든다
-    Then 프롬프트에 "bright daytime" 가 들어 있다
+    Then 프롬프트에 "dark charcoal" 가 들어 있다
     And 프롬프트에 "deep black ink" 가 들어 있지 않다
+    And 프롬프트에 "bright" 가 들어 있지 않다
 
-  Scenario: 밤 프롬프트는 어두운 톤을 요구한다
+  Scenario: 밤 프롬프트는 더 어두운 톤을 요구한다
     Given 박연폭포 명승지
     When night 시간대, autumn 계절, clear 날씨, left 쪽으로 프롬프트를 만든다
     Then 프롬프트에 "deep black ink" 가 들어 있다
-    And 프롬프트에 "bright daytime" 가 들어 있지 않다
+    And 프롬프트에 "daytime" 가 들어 있지 않다
+
+  Scenario: 모든 시간대에서 전체적으로 어두운 톤을 요구한다
+    Given 박연폭포 명승지
+    When day 시간대, autumn 계절, clear 날씨, left 쪽으로 프롬프트를 만든다
+    Then 프롬프트에 "overall dark low-key" 가 들어 있다
+
+  Scenario: 낮 프롬프트에는 해도 달도 그리지 않는다
+    Given 박연폭포 명승지
+    When day 시간대, autumn 계절, clear 날씨, left 쪽으로 프롬프트를 만든다
+    Then 프롬프트에 "no sun and no moon" 가 들어 있다
+    And 프롬프트에 "part of the sky" 가 들어 있지 않다
+
+  Scenario Outline: 밤 프롬프트에는 오늘의 달 모양이 들어간다
+    Given 박연폭포 명승지
+    When night 시간대, autumn 계절, clear 날씨, right 쪽, <phase> 달로 프롬프트를 만든다
+    Then 프롬프트에 "<text>" 가 들어 있다
+
+    Examples:
+      | phase           | text                                   |
+      | waxing_crescent | waxing crescent, lit on its right edge |
+      | first_quarter   | half moon, the right half lit          |
+      | waxing_gibbous  | waxing gibbous                         |
+      | full            | full round moon                        |
+      | waning_gibbous  | waning gibbous                         |
+      | last_quarter    | half moon, the left half lit           |
+      | waning_crescent | waning crescent, lit on its left edge  |
+
+  Scenario: 그믐달 밤에는 달을 그리지 않는다
+    Given 박연폭포 명승지
+    When night 시간대, autumn 계절, clear 날씨, right 쪽, new 달로 프롬프트를 만든다
+    Then 프롬프트에 "no moon is drawn" 가 들어 있다
+    And 프롬프트에 "part of the sky" 가 들어 있지 않다
+
+  Scenario: 구름이나 비가 달을 가리면 달을 그리지 않는다
+    Given 박연폭포 명승지
+    When night 시간대, autumn 계절, rain 날씨, left 쪽으로 프롬프트를 만든다
+    Then 프롬프트에 "if clouds or rain hide it, draw no moon" 가 들어 있다
+
+  Scenario: 알 수 없는 달 모양은 거부된다
+    Given 박연폭포 명승지
+    When night 시간대, autumn 계절, clear 날씨, left 쪽, half 달로 프롬프트를 만들려 한다
+    Then 프롬프트 입력 오류가 발생한다
 
   Scenario: 계절이 프롬프트에 반영된다
     Given 박연폭포 명승지

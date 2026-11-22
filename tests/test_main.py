@@ -356,3 +356,8 @@ def _side_recorded(ctx):
 def _both_sides_used(ctx):
     sides = {_side_in_prompt(call[0][0]) for call in ctx["generate"].calls}
     assert sides == set(config.SKY_SIDES)
+
+
+@then(parsers.parse('latest.json 의 달 모양은 "{phase}" 이다'))
+def _moon_recorded(ctx, phase):
+    assert _written(ctx)["moon_phase"] == phase
