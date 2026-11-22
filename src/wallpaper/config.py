@@ -27,7 +27,9 @@ TOP_DIM_RATIO = 0.8
 # The blank sky takes the picture's sky tones in this many horizontal zones, blended smoothly.
 SKY_TONE_COLUMNS = 8
 # iOS picks white text on dark wallpapers, so the picture's mean brightness (0-255) is capped here.
-MAX_MEAN_BRIGHTNESS = 90
+# Measured on the author's iPhone: a wallpaper averaging ~120 kept white text, ~165 turned it dark.
+# The blank sky above the picture runs a few points brighter than the picture itself.
+MAX_MEAN_BRIGHTNESS = 112
 # Darkening lifts black to this level instead of crushing it, so dark ink detail stays readable.
 MIN_BLACK_LEVEL = 24
 # The moon is painted by us (image models draw moon phases unreliably): just below the blank top
