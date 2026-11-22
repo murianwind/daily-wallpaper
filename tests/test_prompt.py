@@ -21,8 +21,9 @@ COLOR_NAMES = re.compile(
 
 
 def _all_conditions():
-    """Every condition weather.classify can produce (the codes are < 100)."""
-    return {weather.classify(code) for code in [None, *range(100)]}
+    """Every condition weather.classify can produce, one label each."""
+    labels = ["맑음", "구름많음", "흐림", "비", "눈", "안개", "뇌우", "황사"]
+    return {weather.classify(label) for label in labels}
 
 
 def _all_seasons():

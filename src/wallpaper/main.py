@@ -26,8 +26,6 @@ from .config import (
     GEN_WIDTH,
     KST,
     MOON_VISIBLE_CONDITIONS,
-    SEOUL_LATITUDE,
-    SEOUL_LONGITUDE,
     SKY_SIDES,
     SLOTS,
     WALLPAPER_HEIGHT,
@@ -101,7 +99,7 @@ def run(
     seed = rng.randrange(_SEED_LIMIT)
     sky_side = rng.choice(SKY_SIDES)
     moon = moon_phase.phase_of(now)
-    condition = fetch_condition(SEOUL_LATITUDE, SEOUL_LONGITUDE)
+    condition = fetch_condition(now)
     season = prompt_builder.season_of(today)
     prompt = prompt_builder.build_prompt(spot, slot, season, condition, _opposite_side(sky_side))
     logger.info("slot=%s spot=%s weather=%s season=%s", slot, spot.id, condition, season)

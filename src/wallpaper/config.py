@@ -7,9 +7,8 @@ SLOTS = ("day", "night")
 # Which side of the sky the sun or moon is placed on (never the centre).
 SKY_SIDES = ("left", "right")
 
-# Weather reference point: Seoul.
-SEOUL_LATITUDE = 37.5665
-SEOUL_LONGITUDE = 126.9780
+# Hourly KMA forecast calendar kept up to date by the weather-calendar repository.
+WEATHER_ICS_URL = "https://raw.githubusercontent.com/Murianwind/weather-calendar/main/weather.ics"
 
 # FLUX.2 [klein] accepts 256-1920 per side. The picture only fills the lower part of the screen
 # (see TOP_BLANK_RATIO), so it is generated at that area's aspect ratio (~0.69), not the phone's.
@@ -29,7 +28,7 @@ SKY_TONE_COLUMNS = 8
 # iOS picks white text on dark wallpapers, so the picture's mean brightness (0-255) is capped here.
 # Measured on the author's iPhone: a wallpaper averaging ~120 kept white text, ~165 turned it dark.
 # The blank sky above the picture runs a few points brighter than the picture itself.
-MAX_MEAN_BRIGHTNESS = 112
+MAX_MEAN_BRIGHTNESS = 120
 # Darkening lifts black to this level instead of crushing it, so dark ink detail stays readable.
 MIN_BLACK_LEVEL = 24
 # The moon is painted by us (image models draw moon phases unreliably): just below the blank top
