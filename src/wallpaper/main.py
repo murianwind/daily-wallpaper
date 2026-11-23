@@ -32,6 +32,7 @@ from .config import (
     WALLPAPER_WIDTH,
 )
 from .moon_painter import Moon
+from .precipitation import precipitation_for
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,11 @@ def run(
             seed=seed,
         )
         jpeg = image_post.to_wallpaper(
-            raw, WALLPAPER_WIDTH, WALLPAPER_HEIGHT, _visible_moon(slot, condition, moon, sky_side)
+            raw,
+            WALLPAPER_WIDTH,
+            WALLPAPER_HEIGHT,
+            _visible_moon(slot, condition, moon, sky_side),
+            precipitation_for(condition, seed),
         )
     except (cf_client.GenerationError, image_post.ImageProcessingError) as exc:
         logger.error("wallpaper generation failed: %s", exc)

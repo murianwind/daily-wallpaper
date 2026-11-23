@@ -3,7 +3,7 @@ import json
 import random
 from datetime import date, datetime
 
-from PIL import Image
+from PIL import Image, ImageStat
 from pytest_bdd import given, parsers, scenarios, then, when
 
 from support import Recorder, capture, png_bytes
@@ -407,3 +407,21 @@ def _stream_opposite_moon(ctx):
     moon_side = _written(ctx)["sky_side"]
     stream_side = next(side for side in config.SKY_SIDES if side != moon_side)
     assert f"in the {stream_side} third of the frame" in ctx["generate"].calls[0][0][0]
+
+
+def _bright_dot_ratio(ctx):
+    with Image.open(ctx["settings"].out_dir / "latest.jpg") as image:
+        gray = image.convert("L")
+        median = ImageStat.Stat(gray).median[0]
+        mask = gray.point(lambda value: 255 if value >= median + 25 else 0)
+        return ImageStat.Stat(mask).mean[0] / 255
+
+
+@then("latest.jpg 의 밝은 점은 많다")
+def _precipitation_drawn(ctx):
+    assert _bright_dot_ratio(ctx) > 0.002
+
+
+@then("latest.jpg 의 밝은 점은 없다")
+def _no_precipitation(ctx):
+    assert _bright_dot_ratio(ctx) < 0.0005

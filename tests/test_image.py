@@ -79,6 +79,26 @@ def _two_tone_sky():
     return buffer.getvalue()
 
 
+@given("위쪽에 밝고 어두운 줄무늬 구름이 있는 1104x1600 PNG 이미지", target_fixture="raw")
+def _striped_clouds():
+    image = Image.new("L", (1104, 1600), 100)
+    for top in range(0, 700, 40):
+        image.paste(210, (0, top, 1104, top + 20))
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+@given("위쪽에서 아래로 점점 밝아지는 1104x1600 PNG 이미지", target_fixture="raw")
+def _brightening_downwards():
+    image = Image.new("L", (1104, 1600), 230)
+    ramp = Image.linear_gradient("L").resize((1104, 400)).point(lambda v: 60 + round(v * 0.66))
+    image.paste(ramp, (0, 0))
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
 @given("투명 배경 RGBA PNG 이미지", target_fixture="raw")
 def _transparent():
     return png_bytes(300, 600, color=(10, 20, 30, 0), mode="RGBA")
@@ -163,11 +183,31 @@ def _row(ctx, y_ratio):
     return [_gray(ctx, x_ratio, y_ratio) for x_ratio in (0.05, 0.25, 0.5, 0.75, 0.95)]
 
 
-@then("결과의 위쪽 3분의 1 은 같은 높이에서 가로로 모두 같은 밝기이다")
-def _blank_is_horizontally_even(ctx):
-    for y_ratio in (0.02, 0.15, 0.3):
-        levels = _row(ctx, y_ratio)
-        assert max(levels) - min(levels) <= 2
+def _stripe_amplitude(ctx, top_ratio, bottom_ratio):
+    """Spread of the brightness down the middle column between two heights (fractions)."""
+    steps = 40
+    levels = [
+        _gray(ctx, 0.5, top_ratio + (bottom_ratio - top_ratio) * index / steps)
+        for index in range(steps + 1)
+    ]
+    return max(levels) - min(levels)
+
+
+@then("결과의 빈 영역 아래쪽에는 밝고 어두운 무늬가 남아 있다")
+def _blank_keeps_clouds(ctx):
+    assert _stripe_amplitude(ctx, 0.22, config.TOP_BLANK_RATIO - 0.005) >= 25
+
+
+@then("결과의 빈 영역과 그림의 경계 위아래 밝기는 거의 같다")
+def _striped_boundary_continuous(ctx):
+    boundary = config.TOP_BLANK_RATIO
+    assert abs(_gray(ctx, 0.5, boundary - 0.0008) - _gray(ctx, 0.5, boundary + 0.0008)) <= 12
+
+
+@then("결과의 맨 위쪽 무늬는 빈 영역 아래쪽 무늬보다 약하다")
+def _top_clouds_fainter(ctx):
+    near_picture = _stripe_amplitude(ctx, 0.22, config.TOP_BLANK_RATIO - 0.005)
+    assert _stripe_amplitude(ctx, 0.0, 0.06) * 2 <= near_picture
 
 
 @then("결과의 맨 위 픽셀은 빈 영역 아래쪽 픽셀보다 어둡다")
@@ -183,7 +223,7 @@ def _blank_follows_sky(ctx):
 @then("결과의 빈 영역 아래쪽과 그림 하늘의 밝기는 거의 같다")
 def _no_seam(ctx):
     above = _gray(ctx, 0.5, config.TOP_BLANK_RATIO - 0.004)
-    below = _gray(ctx, 0.5, config.TOP_BLANK_RATIO + config.TOP_FADE_RATIO + 0.01)
+    below = _gray(ctx, 0.5, config.TOP_BLANK_RATIO + config.SKY_BAND_RATIO + 0.01)
     assert abs(above - below) <= 6
 
 

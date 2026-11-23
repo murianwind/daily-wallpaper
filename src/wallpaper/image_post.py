@@ -2,24 +2,26 @@
 
 The picture is trimmed and fitted into the lower part of the screen. If it is too bright (so iOS
 would show dark text) its tones are compressed to a dark range, keeping detail. The top third is a
-blank sky that continues the picture's own sky tones and fades into it. The moon, if any, is
-painted last so the darkening does not dim it.
+blank sky made from the picture's own top band mirrored upwards (so clouds keep their shapes),
+blurred and dimmed towards the top. Rain or snow is painted over everything, then the moon, so the
+darkening does not dim them.
 """
 
 import io
 
-from PIL import Image, ImageChops, ImageStat, UnidentifiedImageError
+from PIL import Image, ImageChops, ImageFilter, ImageOps, ImageStat, UnidentifiedImageError
 
 from .config import (
     EDGE_TRIM_RATIO,
     MAX_MEAN_BRIGHTNESS,
     MIN_BLACK_LEVEL,
-    SKY_TONE_COLUMNS,
+    SKY_BAND_RATIO,
+    SKY_MAX_BLUR,
     TOP_BLANK_RATIO,
     TOP_DIM_RATIO,
-    TOP_FADE_RATIO,
 )
 from .moon_painter import Moon, paint_moon
+from .precipitation import Precipitation, paint_precipitation
 
 JPEG_QUALITY = 92
 _OPAQUE = 255
@@ -29,7 +31,13 @@ class ImageProcessingError(RuntimeError):
     """The generated data could not be read as an image."""
 
 
-def to_wallpaper(raw: bytes, width: int, height: int, moon: Moon | None = None) -> bytes:
+def to_wallpaper(
+    raw: bytes,
+    width: int,
+    height: int,
+    moon: Moon | None = None,
+    precipitation: Precipitation | None = None,
+) -> bytes:
     try:
         with Image.open(io.BytesIO(raw)) as source:
             image = source.convert("L")
@@ -37,12 +45,14 @@ def to_wallpaper(raw: bytes, width: int, height: int, moon: Moon | None = None) 
         raise ImageProcessingError("generated data is not a valid image") from exc
 
     blank_height = round(height * TOP_BLANK_RATIO)
-    fade = round(height * TOP_FADE_RATIO)
+    band = round(height * SKY_BAND_RATIO)
     picture = _compress_tones(_cover_fit(_trim_edges(image), width, height - blank_height))
 
     canvas = Image.new("L", (width, height))
-    canvas.paste(_sky(picture, blank_height, fade), (0, 0))
-    canvas.paste(picture, (0, blank_height), _fade_mask(picture, fade))
+    canvas.paste(_sky(picture, blank_height, band), (0, 0))
+    canvas.paste(picture, (0, blank_height))
+    if precipitation is not None:
+        paint_precipitation(canvas, precipitation)
     if moon is not None:
         paint_moon(canvas, moon)
 
@@ -80,30 +90,25 @@ def _compress_tones(image: Image.Image) -> Image.Image:
     return image.point([round(MIN_BLACK_LEVEL + scale * level) for level in range(256)])
 
 
-def _sky(picture: Image.Image, blank_height: int, fade: int) -> Image.Image:
-    """The sky above the picture (`blank_height` rows) plus `fade` rows under the picture's top.
+def _sky(picture: Image.Image, blank_height: int, band: int) -> Image.Image:
+    """The `blank_height` rows above the picture.
 
-    It repeats the picture's top-band tones, smoothly varied across the width, and gets darker
-    towards the top edge, so it continues the picture's own sky instead of a separate flat block.
+    The picture's top `band` rows are mirrored upwards, alternating flipped and unflipped copies so
+    every join is seamless and the sky continues the picture's own clouds. It is blurred more and
+    more towards the top and dimmed there, so the repetition fades out instead of showing.
     """
-    zones = picture.crop((0, 0, picture.width, max(1, fade))).resize(
-        (SKY_TONE_COLUMNS, 1), Image.Resampling.BOX
-    )
-    tones = zones.resize((picture.width, 1), Image.Resampling.BICUBIC)
-    sky = tones.resize((picture.width, blank_height + fade), Image.Resampling.NEAREST)
+    strip = picture.crop((0, 0, picture.width, max(1, band)))
+    sky = Image.new("L", (picture.width, blank_height))
+    flipped = ImageOps.flip(strip)
+    for index in range(-(-blank_height // strip.height)):
+        tile = flipped if index % 2 == 0 else strip
+        sky.paste(tile, (0, blank_height - (index + 1) * strip.height))
 
-    dimming = Image.new("L", sky.size, _OPAQUE)
+    blur_weight = ImageOps.flip(Image.linear_gradient("L").resize((picture.width, blank_height)))
+    sky = Image.composite(sky.filter(ImageFilter.GaussianBlur(SKY_MAX_BLUR)), sky, blur_weight)
+
     ramp = Image.linear_gradient("L").resize((picture.width, blank_height))
-    dimming.paste(
-        ramp.point(lambda v: round(_OPAQUE * (TOP_DIM_RATIO + (1 - TOP_DIM_RATIO) * v / _OPAQUE))),
-        (0, 0),
+    dimming = ramp.point(
+        lambda v: round(_OPAQUE * (TOP_DIM_RATIO + (1 - TOP_DIM_RATIO) * v / _OPAQUE))
     )
     return ImageChops.multiply(sky, dimming)
-
-
-def _fade_mask(picture: Image.Image, fade: int) -> Image.Image:
-    """Opaque everywhere except the first `fade` rows, which ramp from transparent to opaque."""
-    mask = Image.new("L", picture.size, _OPAQUE)
-    if fade > 0:
-        mask.paste(Image.linear_gradient("L").resize((picture.width, fade)), (0, 0))
-    return mask

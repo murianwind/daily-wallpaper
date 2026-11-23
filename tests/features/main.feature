@@ -153,3 +153,18 @@ Feature: 배경화면 생성 실행
   Scenario: 명령줄 실행에서 설정이 빠지면 2 를 돌려준다
     When 환경변수 없이 명령줄로 실행한다
     Then 명령줄 종료 코드는 2 이다
+
+  Scenario Outline: 비나 눈이 오는 날에만 latest.jpg 에 빗줄기나 눈송이가 그려진다
+    Given 정상 설정과 정상 동작하는 생성기
+    And 날씨가 "<weather>" 으로 조회된다
+    When day 시간대로 2026-11-20 에 실행한다
+    Then latest.jpg 의 밝은 점은 <result>
+
+    Examples:
+      | weather      | result |
+      | rain         | 많다   |
+      | thunderstorm | 많다   |
+      | snow         | 많다   |
+      | clear        | 없다   |
+      | overcast     | 없다   |
+      | fog          | 없다   |

@@ -19,12 +19,13 @@ GEN_HEIGHT = 1600
 EDGE_TRIM_RATIO = 0.07
 # Fraction of the screen height kept as plain blank background above the picture.
 TOP_BLANK_RATIO = 1 / 3
-# Fraction of the screen height over which the picture fades into that blank background.
-TOP_FADE_RATIO = 0.10
+# The blank sky is built from the picture's top band (this fraction of the screen height), mirrored
+# upwards so the clouds keep their shapes instead of becoming one flat tone.
+SKY_BAND_RATIO = 0.10
+# Blur radius (px) the mirrored sky reaches at the very top edge (sharp where it meets the picture).
+SKY_MAX_BLUR = 24
 # Brightness of the blank sky at the very top edge, relative to where it meets the picture.
 TOP_DIM_RATIO = 0.8
-# The blank sky takes the picture's sky tones in this many horizontal zones, blended smoothly.
-SKY_TONE_COLUMNS = 8
 # iOS picks white text on dark wallpapers, so the picture's mean brightness (0-255) is capped here.
 # Measured on the author's iPhone: a wallpaper averaging ~120 kept white text, ~165 turned it dark.
 # The blank sky above the picture runs a few points brighter than the picture itself.
@@ -38,6 +39,12 @@ MOON_CENTER_Y_RATIO = 0.37
 MOON_CENTER_X_RATIOS = {"left": 0.25, "right": 0.75}
 MOON_LEVEL = 235
 # Weather in which the night moon can be seen (anything else hides it behind clouds, rain or fog).
+# Rain and snow are painted over the whole wallpaper after the tone compression, as added brightness
+# (0-255): thin slanted streaks for rain (and thunderstorms), soft dots for snow.
+RAIN_STREAKS = 900
+RAIN_LEVEL = 100
+SNOW_FLAKES = 450
+SNOW_LEVEL = 170
 MOON_VISIBLE_CONDITIONS = ("clear", "partly_cloudy", "unknown")
 # iPhone 15 Pro screen size in pixels.
 WALLPAPER_WIDTH = 1179
