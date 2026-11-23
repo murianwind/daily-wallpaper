@@ -111,6 +111,15 @@ def _peak_under_sky():
     return buffer.getvalue()
 
 
+@given("하늘 윗부분에 작은 어두운 점이 있는 1104x1600 PNG 이미지", target_fixture="raw")
+def _speck_in_sky():
+    image = Image.new("L", (1104, 1600), 190)
+    image.paste(60, (400, 160, 408, 168))
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
 @given("투명 배경 RGBA PNG 이미지", target_fixture="raw")
 def _transparent():
     return png_bytes(300, 600, color=(10, 20, 30, 0), mode="RGBA")
@@ -220,6 +229,15 @@ def _striped_boundary_continuous(ctx):
 def _no_mirrored_peak(ctx):
     for y_ratio in (0.03, 0.08, 0.14, 0.2, 0.26, 0.31):
         assert _gray(ctx, 0.03, y_ratio) >= 0.85 * _gray(ctx, 0.9, y_ratio)
+
+
+@then("결과의 빈 영역은 각 줄이 가로로 고르다")
+def _blank_rows_even(ctx):
+    with Image.open(io.BytesIO(ctx["result"])) as image:
+        gray = image.convert("L")
+        for y in range(0, round(gray.height * config.TOP_BLANK_RATIO), 3):
+            low, high = gray.crop((0, y, gray.width, y + 1)).getextrema()
+            assert high - low <= 5
 
 
 @then("결과의 맨 위쪽 무늬는 빈 영역 아래쪽 무늬보다 약하다")

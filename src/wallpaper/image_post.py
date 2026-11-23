@@ -18,6 +18,7 @@ from .config import (
     SKY_BAND_RATIO,
     SKY_MAX_BLUR,
     SKY_MOUNTAIN_CONTRAST,
+    SKY_SPECK_SIZE,
     TOP_BLANK_RATIO,
     TOP_DIM_RATIO,
 )
@@ -116,14 +117,29 @@ def _dark_edge(picture: Image.Image, y: int) -> int:
     return len(histogram) - 1
 
 
+def _erase_specks(strip: Image.Image) -> Image.Image:
+    """Remove dark and bright specks smaller than SKY_SPECK_SIZE px (big cloud shapes stay).
+
+    Closing (grow, then shrink) fills dark specks; opening, the reverse, removes bright ones such
+    as the halo that resampling leaves around a speck. Done at half size, which is much faster and
+    also drops the paper grain the blurred sky does not need.
+    """
+    half = strip.resize((strip.width // 2, max(1, strip.height // 2)), Image.Resampling.BOX)
+    size = SKY_SPECK_SIZE // 2 | 1  # the same extent at half size, kept odd
+    closed = half.filter(ImageFilter.MaxFilter(size)).filter(ImageFilter.MinFilter(size))
+    opened = closed.filter(ImageFilter.MinFilter(size)).filter(ImageFilter.MaxFilter(size))
+    return opened.resize(strip.size, Image.Resampling.BICUBIC)
+
+
 def _sky(picture: Image.Image, blank_height: int, band: int) -> Image.Image:
     """The `blank_height` rows above the picture.
 
     The sky rows at the picture's top (see `_sky_rows`) are mirrored upwards, alternating flipped
     and unflipped copies so every join is seamless and the sky continues the picture's own clouds.
-    It is blurred more and more towards the top and dimmed there, so repetition fades out.
+    Small specks are erased, then it is blurred more and more towards the top and dimmed there,
+    so repetition fades out.
     """
-    strip = picture.crop((0, 0, picture.width, _sky_rows(picture, band)))
+    strip = _erase_specks(picture.crop((0, 0, picture.width, _sky_rows(picture, band))))
     sky = Image.new("L", (picture.width, blank_height))
     flipped = ImageOps.flip(strip)
     for index in range(-(-blank_height // strip.height)):

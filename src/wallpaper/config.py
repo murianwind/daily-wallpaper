@@ -25,6 +25,8 @@ SKY_BAND_RATIO = 0.10
 # The band stops where mountains or trees start: the first row whose darkest part is this much
 # darker than the picture's top row.
 SKY_MOUNTAIN_CONTRAST = 60
+# Dark specks up to this many px across (odd) are erased from the mirrored sky.
+SKY_SPECK_SIZE = 17
 # Blur radius (px) the mirrored sky reaches at the very top edge (sharp where it meets the picture).
 SKY_MAX_BLUR = 24
 # Brightness of the blank sky at the very top edge, relative to where it meets the picture.
