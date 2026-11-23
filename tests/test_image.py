@@ -120,6 +120,13 @@ def _speck_in_sky():
     return buffer.getvalue()
 
 
+@given("종이 결이 있는 회색 하늘 1104x1600 PNG 이미지", target_fixture="raw")
+def _grainy_sky():
+    buffer = io.BytesIO()
+    Image.effect_noise((1104, 1600), 14).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
 @given("투명 배경 RGBA PNG 이미지", target_fixture="raw")
 def _transparent():
     return png_bytes(300, 600, color=(10, 20, 30, 0), mode="RGBA")
@@ -238,6 +245,16 @@ def _blank_rows_even(ctx):
         for y in range(0, round(gray.height * config.TOP_BLANK_RATIO), 3):
             low, high = gray.crop((0, y, gray.width, y + 1)).getextrema()
             assert high - low <= 5
+
+
+@then("결과의 경계 위아래 결의 세기는 거의 같다")
+def _grain_continuous(ctx):
+    boundary = round(config.WALLPAPER_HEIGHT * config.TOP_BLANK_RATIO)
+    with Image.open(io.BytesIO(ctx["result"])) as image:
+        gray = image.convert("L")
+        above = ImageStat.Stat(gray.crop((0, boundary - 20, gray.width, boundary))).stddev[0]
+        below = ImageStat.Stat(gray.crop((0, boundary, gray.width, boundary + 20))).stddev[0]
+    assert abs(above - below) <= 4
 
 
 @then("결과의 맨 위쪽 무늬는 빈 영역 아래쪽 무늬보다 약하다")

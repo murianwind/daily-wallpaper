@@ -52,8 +52,9 @@ def to_wallpaper(
     picture = _compress_tones(_cover_fit(_trim_edges(image), width, height - blank_height))
 
     canvas = Image.new("L", (width, height))
-    canvas.paste(_sky(picture, blank_height, band), (0, 0))
-    canvas.paste(picture, (0, blank_height))
+    sky, overlap = _sky(picture, blank_height, band)
+    canvas.paste(sky, (0, 0))
+    canvas.paste(picture, (0, blank_height), _fade_mask(picture, overlap))
     if precipitation is not None:
         paint_precipitation(canvas, precipitation)
     if moon is not None:
@@ -131,26 +132,40 @@ def _erase_specks(strip: Image.Image) -> Image.Image:
     return opened.resize(strip.size, Image.Resampling.BICUBIC)
 
 
-def _sky(picture: Image.Image, blank_height: int, band: int) -> Image.Image:
-    """The `blank_height` rows above the picture.
+def _sky(picture: Image.Image, blank_height: int, band: int) -> tuple[Image.Image, int]:
+    """The sky for the `blank_height` rows above the picture, plus `overlap` rows under its top.
 
     The sky rows at the picture's top (see `_sky_rows`) are mirrored upwards, alternating flipped
     and unflipped copies so every join is seamless and the sky continues the picture's own clouds.
     Small specks are erased, then it is blurred more and more towards the top and dimmed there,
-    so repetition fades out.
+    so repetition fades out. The picture later fades in over the `overlap` rows (returned too), so
+    the smoothed sky does not meet the picture's paper grain in a visible line.
     """
     strip = _erase_specks(picture.crop((0, 0, picture.width, _sky_rows(picture, band))))
-    sky = Image.new("L", (picture.width, blank_height))
+    sky = Image.new("L", (picture.width, blank_height + strip.height))
+    sky.paste(strip, (0, blank_height))
     flipped = ImageOps.flip(strip)
     for index in range(-(-blank_height // strip.height)):
         tile = flipped if index % 2 == 0 else strip
         sky.paste(tile, (0, blank_height - (index + 1) * strip.height))
 
-    blur_weight = ImageOps.flip(Image.linear_gradient("L").resize((picture.width, blank_height)))
-    sky = Image.composite(sky.filter(ImageFilter.GaussianBlur(SKY_MAX_BLUR)), sky, blur_weight)
+    # Blur and dim only the blank part: the overlap rows must keep the picture's own tones.
+    blank = sky.crop((0, 0, picture.width, blank_height))
+    blur_weight = ImageOps.flip(Image.linear_gradient("L").resize(blank.size))
+    blank = Image.composite(
+        blank.filter(ImageFilter.GaussianBlur(SKY_MAX_BLUR)), blank, blur_weight
+    )
 
-    ramp = Image.linear_gradient("L").resize((picture.width, blank_height))
+    ramp = Image.linear_gradient("L").resize(blank.size)
     dimming = ramp.point(
         lambda v: round(_OPAQUE * (TOP_DIM_RATIO + (1 - TOP_DIM_RATIO) * v / _OPAQUE))
     )
-    return ImageChops.multiply(sky, dimming)
+    sky.paste(ImageChops.multiply(blank, dimming), (0, 0))
+    return sky, strip.height
+
+
+def _fade_mask(picture: Image.Image, fade: int) -> Image.Image:
+    """Opaque everywhere except the first `fade` rows, which ramp from transparent to opaque."""
+    mask = Image.new("L", picture.size, _OPAQUE)
+    mask.paste(Image.linear_gradient("L").resize((picture.width, fade)), (0, 0))
+    return mask
