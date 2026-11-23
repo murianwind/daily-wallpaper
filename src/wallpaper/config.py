@@ -22,6 +22,9 @@ TOP_BLANK_RATIO = 1 / 3
 # The blank sky is built from the picture's top band (this fraction of the screen height), mirrored
 # upwards so the clouds keep their shapes instead of becoming one flat tone.
 SKY_BAND_RATIO = 0.10
+# The band stops where mountains or trees start: the first row whose darkest part is this much
+# darker than the picture's top row.
+SKY_MOUNTAIN_CONTRAST = 60
 # Blur radius (px) the mirrored sky reaches at the very top edge (sharp where it meets the picture).
 SKY_MAX_BLUR = 24
 # Brightness of the blank sky at the very top edge, relative to where it meets the picture.

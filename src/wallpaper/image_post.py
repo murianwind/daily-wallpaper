@@ -17,6 +17,7 @@ from .config import (
     MIN_BLACK_LEVEL,
     SKY_BAND_RATIO,
     SKY_MAX_BLUR,
+    SKY_MOUNTAIN_CONTRAST,
     TOP_BLANK_RATIO,
     TOP_DIM_RATIO,
 )
@@ -90,14 +91,28 @@ def _compress_tones(image: Image.Image) -> Image.Image:
     return image.point([round(MIN_BLACK_LEVEL + scale * level) for level in range(256)])
 
 
+def _sky_rows(picture: Image.Image, band: int) -> int:
+    """How many top rows are still sky: stop at the first row with a clearly darker part.
+
+    Mirroring a peak or a pine into the sky would leave a symmetric dark blob up there.
+    """
+    columns = 32
+    rows = picture.crop((0, 0, picture.width, band)).resize((columns, band), Image.Resampling.BOX)
+    darkest = [min(rows.getpixel((x, y)) for x in range(columns)) for y in range(band)]
+    for y in range(1, band):
+        if darkest[y] < darkest[0] - SKY_MOUNTAIN_CONTRAST:
+            return y
+    return band
+
+
 def _sky(picture: Image.Image, blank_height: int, band: int) -> Image.Image:
     """The `blank_height` rows above the picture.
 
-    The picture's top `band` rows are mirrored upwards, alternating flipped and unflipped copies so
-    every join is seamless and the sky continues the picture's own clouds. It is blurred more and
-    more towards the top and dimmed there, so the repetition fades out instead of showing.
+    The sky rows at the picture's top (see `_sky_rows`) are mirrored upwards, alternating flipped
+    and unflipped copies so every join is seamless and the sky continues the picture's own clouds.
+    It is blurred more and more towards the top and dimmed there, so repetition fades out.
     """
-    strip = picture.crop((0, 0, picture.width, max(1, band)))
+    strip = picture.crop((0, 0, picture.width, _sky_rows(picture, band)))
     sky = Image.new("L", (picture.width, blank_height))
     flipped = ImageOps.flip(strip)
     for index in range(-(-blank_height // strip.height)):

@@ -99,6 +99,15 @@ def _brightening_downwards():
     return buffer.getvalue()
 
 
+@given("위쪽 하늘 아래로 왼쪽에 어두운 봉우리가 솟은 1104x1600 PNG 이미지", target_fixture="raw")
+def _peak_under_sky():
+    image = Image.new("L", (1104, 1600), 190)
+    image.paste(50, (100, 250, 300, 1600))
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
 @given("투명 배경 RGBA PNG 이미지", target_fixture="raw")
 def _transparent():
     return png_bytes(300, 600, color=(10, 20, 30, 0), mode="RGBA")
@@ -202,6 +211,12 @@ def _blank_keeps_clouds(ctx):
 def _striped_boundary_continuous(ctx):
     boundary = config.TOP_BLANK_RATIO
     assert abs(_gray(ctx, 0.5, boundary - 0.0008) - _gray(ctx, 0.5, boundary + 0.0008)) <= 12
+
+
+@then("결과의 빈 영역은 봉우리 위쪽에서도 좌우가 비슷한 하늘이다")
+def _no_mirrored_peak(ctx):
+    for y_ratio in (0.03, 0.08, 0.14, 0.2, 0.26, 0.31):
+        assert _gray(ctx, 0.1, y_ratio) >= 0.85 * _gray(ctx, 0.9, y_ratio)
 
 
 @then("결과의 맨 위쪽 무늬는 빈 영역 아래쪽 무늬보다 약하다")
