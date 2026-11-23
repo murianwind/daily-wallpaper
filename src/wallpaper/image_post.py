@@ -26,6 +26,7 @@ from .precipitation import Precipitation, paint_precipitation
 
 JPEG_QUALITY = 92
 _OPAQUE = 255
+_SKY_SPECK_RATIO = 0.005  # a row's darkest 0.5% of pixels (ink specks in the paper) are ignored
 
 
 class ImageProcessingError(RuntimeError):
@@ -96,13 +97,23 @@ def _sky_rows(picture: Image.Image, band: int) -> int:
 
     Mirroring a peak or a pine into the sky would leave a symmetric dark blob up there.
     """
-    columns = 32
-    rows = picture.crop((0, 0, picture.width, band)).resize((columns, band), Image.Resampling.BOX)
-    darkest = [min(rows.getpixel((x, y)) for x in range(columns)) for y in range(band)]
+    darkest = [_dark_edge(picture, y) for y in range(band)]
     for y in range(1, band):
         if darkest[y] < darkest[0] - SKY_MOUNTAIN_CONTRAST:
             return y
     return band
+
+
+def _dark_edge(picture: Image.Image, y: int) -> int:
+    """Level below which the darkest few pixels of row `y` lie (ignores single specks)."""
+    histogram = picture.crop((0, y, picture.width, y + 1)).histogram()
+    allowed = picture.width * _SKY_SPECK_RATIO
+    seen = 0
+    for level, count in enumerate(histogram):
+        seen += count
+        if seen > allowed:
+            return level
+    return len(histogram) - 1
 
 
 def _sky(picture: Image.Image, blank_height: int, band: int) -> Image.Image:
