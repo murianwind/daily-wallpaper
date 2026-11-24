@@ -19,16 +19,14 @@ GEN_HEIGHT = 1600
 EDGE_TRIM_RATIO = 0.07
 # Fraction of the screen height kept as plain blank background above the picture.
 TOP_BLANK_RATIO = 1 / 3
-# The blank sky is built from the picture's top band (this fraction of the screen height), mirrored
-# upwards so the clouds keep their shapes instead of becoming one flat tone.
-SKY_BAND_RATIO = 0.10
-# The band stops where mountains or trees start: the first row whose darkest part is this much
-# darker than the picture's top row.
-SKY_MOUNTAIN_CONTRAST = 60
-# Dark specks up to this many px across (odd) are erased from the mirrored sky.
-SKY_SPECK_SIZE = 17
-# Blur radius (px) the mirrored sky reaches at the very top edge (sharp where it meets the picture).
-SKY_MAX_BLUR = 24
+# The blank sky is drawn fresh (never copied from the picture, so no mountain or tree can leak into
+# it): the tone of the picture's top SKY_TONE_ROWS rows in SKY_TONE_COLUMNS horizontal zones, plus
+# procedural clouds. The picture then fades in over this fraction of the screen height.
+TOP_FADE_RATIO = 0.10
+SKY_TONE_ROWS = 8
+SKY_TONE_COLUMNS = 8
+# How far (0-255 levels per unit of noise) clouds of strength 1.0 swing around the sky tone.
+SKY_CLOUD_GAIN = 0.4
 # Brightness of the blank sky at the very top edge, relative to where it meets the picture.
 TOP_DIM_RATIO = 0.8
 # iOS picks white text on dark wallpapers, so the picture's mean brightness (0-255) is capped here.

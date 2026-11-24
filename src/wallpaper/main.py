@@ -33,6 +33,7 @@ from .config import (
 )
 from .moon_painter import Moon
 from .precipitation import precipitation_for
+from .sky_clouds import clouds_for
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +122,7 @@ def run(
             WALLPAPER_HEIGHT,
             _visible_moon(slot, condition, moon, sky_side),
             precipitation_for(condition, seed),
+            clouds_for(condition, seed),
         )
     except (cf_client.GenerationError, image_post.ImageProcessingError) as exc:
         logger.error("wallpaper generation failed: %s", exc)

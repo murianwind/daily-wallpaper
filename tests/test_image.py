@@ -79,16 +79,6 @@ def _two_tone_sky():
     return buffer.getvalue()
 
 
-@given("위쪽에 밝고 어두운 줄무늬 구름이 있는 1104x1600 PNG 이미지", target_fixture="raw")
-def _striped_clouds():
-    image = Image.new("L", (1104, 1600), 100)
-    for top in range(0, 700, 40):
-        image.paste(210, (0, top, 1104, top + 20))
-    buffer = io.BytesIO()
-    image.save(buffer, format="PNG")
-    return buffer.getvalue()
-
-
 @given("위쪽에서 아래로 점점 밝아지는 1104x1600 PNG 이미지", target_fixture="raw")
 def _brightening_downwards():
     image = Image.new("L", (1104, 1600), 230)
@@ -124,6 +114,27 @@ def _speck_in_sky():
 def _grainy_sky():
     buffer = io.BytesIO()
     Image.effect_noise((1104, 1600), 14).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+@given("어두운 하늘 위쪽에 나무가 솟은 1104x1600 PNG 이미지", target_fixture="raw")
+def _tree_in_dark_sky():
+    image = Image.new("L", (1104, 1600), 30)
+    image.paste(4, (100, 200, 140, 1600))
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+@given(
+    "맨 윗줄까지 가느다란 어두운 가지가 지나가는 밝은 하늘 1104x1600 PNG 이미지",
+    target_fixture="raw",
+)
+def _twig_in_sky():
+    image = Image.new("L", (1104, 1600), 150)
+    image.paste(20, (500, 0, 508, 1600))
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
     return buffer.getvalue()
 
 
@@ -211,21 +222,6 @@ def _row(ctx, y_ratio):
     return [_gray(ctx, x_ratio, y_ratio) for x_ratio in (0.05, 0.25, 0.5, 0.75, 0.95)]
 
 
-def _stripe_amplitude(ctx, top_ratio, bottom_ratio):
-    """Spread of the brightness down the middle column between two heights (fractions)."""
-    steps = 40
-    levels = [
-        _gray(ctx, 0.5, top_ratio + (bottom_ratio - top_ratio) * index / steps)
-        for index in range(steps + 1)
-    ]
-    return max(levels) - min(levels)
-
-
-@then("결과의 빈 영역 아래쪽에는 밝고 어두운 무늬가 남아 있다")
-def _blank_keeps_clouds(ctx):
-    assert _stripe_amplitude(ctx, 0.22, config.TOP_BLANK_RATIO - 0.005) >= 25
-
-
 @then("결과의 빈 영역과 그림의 경계 위아래 밝기는 거의 같다")
 def _striped_boundary_continuous(ctx):
     boundary = config.TOP_BLANK_RATIO
@@ -257,12 +253,6 @@ def _grain_continuous(ctx):
     assert abs(above - below) <= 4
 
 
-@then("결과의 맨 위쪽 무늬는 빈 영역 아래쪽 무늬보다 약하다")
-def _top_clouds_fainter(ctx):
-    near_picture = _stripe_amplitude(ctx, 0.22, config.TOP_BLANK_RATIO - 0.005)
-    assert _stripe_amplitude(ctx, 0.0, 0.06) * 2 <= near_picture
-
-
 @then("결과의 맨 위 픽셀은 빈 영역 아래쪽 픽셀보다 어둡다")
 def _top_is_darker(ctx):
     assert _gray(ctx, 0.5, 0.005) + 10 <= _gray(ctx, 0.5, config.TOP_BLANK_RATIO - 0.01)
@@ -276,7 +266,7 @@ def _blank_follows_sky(ctx):
 @then("결과의 빈 영역 아래쪽과 그림 하늘의 밝기는 거의 같다")
 def _no_seam(ctx):
     above = _gray(ctx, 0.5, config.TOP_BLANK_RATIO - 0.004)
-    below = _gray(ctx, 0.5, config.TOP_BLANK_RATIO + config.SKY_BAND_RATIO + 0.01)
+    below = _gray(ctx, 0.5, config.TOP_BLANK_RATIO + config.TOP_FADE_RATIO + 0.01)
     assert abs(above - below) <= 6
 
 

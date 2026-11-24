@@ -168,3 +168,15 @@ Feature: 배경화면 생성 실행
       | clear        | 없다   |
       | overcast     | 없다   |
       | fog          | 없다   |
+
+  Scenario Outline: 날씨에 따라 위쪽 하늘의 구름 무늬 세기가 다르다
+    Given 정상 설정과 정상 동작하는 생성기
+    And 날씨가 "<weather>" 으로 조회된다
+    When day 시간대로 2026-11-20 에 실행한다
+    Then latest.jpg 위쪽 하늘의 가로 밝기 변화는 <result>
+
+    Examples:
+      | weather  | result |
+      | overcast | 크다   |
+      | clear    | 작다   |
+

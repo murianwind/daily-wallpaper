@@ -425,3 +425,24 @@ def _precipitation_drawn(ctx):
 @then("latest.jpg 의 밝은 점은 없다")
 def _no_precipitation(ctx):
     assert _bright_dot_ratio(ctx) < 0.0005
+
+
+def _sky_row_variation(ctx):
+    with Image.open(ctx["settings"].out_dir / "latest.jpg") as image:
+        gray = image.convert("L")
+        blank = round(gray.height * config.TOP_BLANK_RATIO)
+        spreads = [
+            ImageStat.Stat(gray.crop((0, y, gray.width, y + 1))).stddev[0]
+            for y in range(0, blank, 8)
+        ]
+        return sum(spreads) / len(spreads)
+
+
+@then("latest.jpg 위쪽 하늘의 가로 밝기 변화는 크다")
+def _heavy_clouds(ctx):
+    assert _sky_row_variation(ctx) > 5
+
+
+@then("latest.jpg 위쪽 하늘의 가로 밝기 변화는 작다")
+def _light_clouds(ctx):
+    assert _sky_row_variation(ctx) < 3
