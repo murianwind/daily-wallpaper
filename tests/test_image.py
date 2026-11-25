@@ -70,15 +70,6 @@ def _dark_gray():
     return png_bytes(1104, 1600, color=DARK_GRAY, mode="L")
 
 
-@given("왼쪽은 어둡고 오른쪽은 밝은 하늘 1104x1600 PNG 이미지", target_fixture="raw")
-def _two_tone_sky():
-    image = Image.new("L", (1104, 1600), 200)
-    image.paste(120, (0, 0, 552, 1600))
-    buffer = io.BytesIO()
-    image.save(buffer, format="PNG")
-    return buffer.getvalue()
-
-
 @given("위쪽에서 아래로 점점 밝아지는 1104x1600 PNG 이미지", target_fixture="raw")
 def _brightening_downwards():
     image = Image.new("L", (1104, 1600), 230)
@@ -133,6 +124,15 @@ def _tree_in_dark_sky():
 def _twig_in_sky():
     image = Image.new("L", (1104, 1600), 150)
     image.paste(20, (500, 0, 508, 1600))
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+@given("왼쪽 위 모서리에 어두운 나무가 걸린 밝은 하늘 1104x1600 PNG 이미지", target_fixture="raw")
+def _tree_in_corner():
+    image = Image.new("L", (1104, 1600), 150)
+    image.paste(20, (0, 0, 220, 700))
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
     return buffer.getvalue()
@@ -222,6 +222,11 @@ def _row(ctx, y_ratio):
     return [_gray(ctx, x_ratio, y_ratio) for x_ratio in (0.05, 0.25, 0.5, 0.75, 0.95)]
 
 
+@then("결과의 빈 영역은 그림의 하늘만큼 밝다")
+def _blank_as_bright_as_sky(ctx):
+    assert _gray(ctx, 0.5, 0.30) >= 0.85 * _gray(ctx, 0.9, 0.45)
+
+
 @then("결과의 빈 영역과 그림의 경계 위아래 밝기는 거의 같다")
 def _striped_boundary_continuous(ctx):
     boundary = config.TOP_BLANK_RATIO
@@ -256,11 +261,6 @@ def _grain_continuous(ctx):
 @then("결과의 맨 위 픽셀은 빈 영역 아래쪽 픽셀보다 어둡다")
 def _top_is_darker(ctx):
     assert _gray(ctx, 0.5, 0.005) + 10 <= _gray(ctx, 0.5, config.TOP_BLANK_RATIO - 0.01)
-
-
-@then("결과의 위쪽 빈 영역은 오른쪽이 왼쪽보다 밝다")
-def _blank_follows_sky(ctx):
-    assert _gray(ctx, 0.95, 0.3) >= _gray(ctx, 0.05, 0.3) + 15
 
 
 @then("결과의 빈 영역 아래쪽과 그림 하늘의 밝기는 거의 같다")

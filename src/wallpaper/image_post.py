@@ -2,9 +2,9 @@
 
 The picture is trimmed and fitted into the lower part of the screen. If it is too bright (so iOS
 would show dark text) its tones are compressed to a dark range, keeping detail. The top third is a
-blank sky drawn fresh from the picture's top-row tones plus weather-dependent clouds (nothing of the
-picture is copied into it), dimmed towards the top. Rain or snow is painted over everything, then
-the moon, so the darkening does not dim them.
+blank sky drawn fresh from one tone of the picture's top rows plus weather-dependent clouds (nothing
+of the picture is copied into it), dimmed towards the top. Rain or snow is painted over everything,
+then the moon, so the darkening does not dim them.
 """
 
 import io
@@ -15,7 +15,7 @@ from .config import (
     EDGE_TRIM_RATIO,
     MAX_MEAN_BRIGHTNESS,
     MIN_BLACK_LEVEL,
-    SKY_TONE_COLUMNS,
+    SKY_TONE_QUANTILE,
     SKY_TONE_ROWS,
     TOP_BLANK_RATIO,
     TOP_DIM_RATIO,
@@ -96,8 +96,8 @@ def _compress_tones(image: Image.Image) -> Image.Image:
 def _sky(picture: Image.Image, blank_height: int, fade: int, clouds: Clouds | None) -> Image.Image:
     """The sky for the `blank_height` rows above the picture plus `fade` rows under its top.
 
-    It is drawn fresh, never copied from the picture: the tone of the picture's very top rows in a
-    few horizontal zones (blended smoothly), plus procedural clouds. The extra `fade` rows are what
+    It is drawn fresh, never copied from the picture: one flat tone taken from the picture's top
+    rows, plus procedural clouds. The extra `fade` rows are what
     the picture fades in over, so the sky meets it without a visible line. Only the blank part is
     dimmed towards the top, so it stays dark enough for white text.
     """
@@ -115,16 +115,19 @@ def _sky(picture: Image.Image, blank_height: int, fade: int, clouds: Clouds | No
 
 
 def _tone_field(picture: Image.Image, height: int) -> Image.Image:
-    """The tone of the picture's top rows per horizontal zone, smoothly blended across the width."""
-    zone_width = picture.width / SKY_TONE_COLUMNS
-    zones = Image.new("L", (SKY_TONE_COLUMNS, 1))
-    for column in range(SKY_TONE_COLUMNS):
-        zone = picture.crop(
-            (round(column * zone_width), 0, round((column + 1) * zone_width), SKY_TONE_ROWS)
-        )
-        zones.putpixel((column, 0), round(ImageStat.Stat(zone).median[0]))
-    row = zones.resize((picture.width, 1), Image.Resampling.BICUBIC)
-    return row.resize((picture.width, height), Image.Resampling.NEAREST)
+    """A flat field of the sky tone: the picture's top rows' brightness at SKY_TONE_QUANTILE.
+
+    A high quantile ignores dark trees or peaks that touch the top edge, which would otherwise pull
+    the sky dark on that side.
+    """
+    histogram = picture.crop((0, 0, picture.width, SKY_TONE_ROWS)).histogram()
+    wanted = picture.width * SKY_TONE_ROWS * SKY_TONE_QUANTILE
+    seen = 0
+    for level, count in enumerate(histogram):
+        seen += count
+        if seen >= wanted:
+            return Image.new("L", (picture.width, height), level)
+    return Image.new("L", (picture.width, height), len(histogram) - 1)
 
 
 def _fade_mask(picture: Image.Image, fade: int) -> Image.Image:
